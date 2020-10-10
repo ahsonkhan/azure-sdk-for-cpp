@@ -36,8 +36,6 @@ Merging Pull Requests (for project contributors with write access)
   - Contributor is using an e-mail address other than the primary GitHub address and wants that preserved in the history. Contributor must be willing to squash
     the commits manually before acceptance.
 
-
-
 ## Developer Guide
 
 ### Pre-requisites
