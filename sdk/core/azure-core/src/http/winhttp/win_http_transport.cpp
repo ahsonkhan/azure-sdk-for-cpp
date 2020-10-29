@@ -6,6 +6,7 @@
 #include "azure/core/http/winhttp/win_http_client.hpp"
 
 #include <string>
+#include <Winhttp.h>
 
 using namespace Azure::Core::Http;
 
@@ -16,20 +17,18 @@ WinHttpTansport::~WinHttpTansport() {}
 std::unique_ptr<RawResponse> WinHttpTansport::Send(Context const& context, Request& request)
 {
   AZURE_UNREFERENCED_PARAMETER(context);
-  AZURE_UNREFERENCED_PARAMETER(request);
 
-
-  
-    DWORD dwSize = 0;
+  DWORD dwSize = 0;
   DWORD dwDownloaded = 0;
   LPSTR pszOutBuffer;
   BOOL bResults = FALSE;
   HINTERNET hSession = NULL, hConnect = NULL, hRequest = NULL;
 
   // Use WinHttpOpen to obtain a session handle.
+  // The dwFlags is set to 0 - all WinHTTP functions are performed synchronously.
   hSession = WinHttpOpen(
       L"WinHTTP Example/1.0",
-      WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
+      WINHTTP_ACCESS_TYPE_NO_PROXY,
       WINHTTP_NO_PROXY_NAME,
       WINHTTP_NO_PROXY_BYPASS,
       0);
@@ -37,7 +36,7 @@ std::unique_ptr<RawResponse> WinHttpTansport::Send(Context const& context, Reque
   // TODO: Get port and hostname from Url
   // Specify an HTTP server.
   if (hSession)
-    hConnect = WinHttpConnect(hSession, L"www.microsoft.com", INTERNET_DEFAULT_HTTPS_PORT, 0);
+    hConnect = WinHttpConnect(hSession, L"www.microsoft.com", INTERNET_DEFAULT_PORT, 0);
 
   // Create an HTTP request handle.
   if (hConnect)

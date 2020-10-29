@@ -11,11 +11,6 @@
 #include "azure/core/context.hpp"
 #include "azure/core/http/http.hpp"
 
-// HttpInitializationCallback
-
-
-// static globalstate = IsCurlInitialized
-
 namespace Azure { namespace Core { namespace Http {
 
   /**
@@ -36,15 +31,11 @@ namespace Azure { namespace Core { namespace Http {
     // TODO - Should this be const
     virtual std::unique_ptr<RawResponse> Send(Context const& context, Request& request) = 0;
 
-    //virtual bool IsInitialized;
-
     /// Destructor.
     virtual ~HttpTransport() {}
 
   protected:
     HttpTransport() = default;
-    // HttpTransport(HttpTransportOptions options) = default;
-    // HttpTransport(bool doTransportInitailization) = default;
     HttpTransport(const HttpTransport& other) = default;
     HttpTransport(HttpTransport&& other) = default;
     HttpTransport& operator=(const HttpTransport& other) = default;

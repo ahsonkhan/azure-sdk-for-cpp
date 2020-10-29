@@ -6,7 +6,7 @@
  */
 
 #pragma once
-#ifdef BUILD_TRANSPORT_WINHTTP_ADAPTER
+#ifndef BUILD_TRANSPORT_WINHTTP_ADAPTER
 
 #include "azure/core/http/http.hpp"
 #include "azure/core/http/policy.hpp"
@@ -17,15 +17,18 @@
 namespace Azure { namespace Core { namespace Http {
 
   /**
-   * @brief #HttpTransport implementation via WinHttp.
+   * @brief Concrete implementation of an HTTP Transport that uses WinHttp.
+   *
    */
   class WinHttpTansport : public HttpTransport {
-  private:
   public:
-    /// Constructor.
-    WinHttpTansport();
-    ~WinHttpTansport() override;
-
+    /**
+     * @brief Implements interface to send an HTTP Request and produce an HTTP RawResponse.
+     *
+     * @param context #Context so that operation can be canceled.
+     * @param request an HTTP Request to be send.
+     * @return unique ptr to an HTTP RawResponse.
+     */
     virtual std::unique_ptr<RawResponse> Send(Context const& context, Request& request) override;
   };
 

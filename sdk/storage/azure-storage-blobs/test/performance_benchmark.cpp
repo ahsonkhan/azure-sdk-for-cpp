@@ -9,12 +9,12 @@
 
 namespace Azure { namespace Storage { namespace Test {
 
-  TEST_F(BlobContainerClientTest, SingleThreadPerf)
+  TEST_F(BlobContainerClientTest, DISABLED_SingleThreadPerf)
   {
     auto blockBlobClient = Azure::Storage::Blobs::BlockBlobClient::CreateFromConnectionString(
         StandardStorageConnectionString(), m_containerName, "SingleThreadPerf" + RandomString());
 
-    constexpr std::size_t bufferSize = static_cast<std::size_t>(100_MB);
+    constexpr std::size_t bufferSize = static_cast<std::size_t>(1_GB);
     std::vector<uint8_t> buffer = RandomBuffer(bufferSize);
     {
       Blobs::UploadBlockBlobFromOptions options;
@@ -43,7 +43,7 @@ namespace Azure { namespace Storage { namespace Test {
     }
   }
 
-  TEST_F(BlobContainerClientTest, MultiThreadPerf)
+  TEST_F(BlobContainerClientTest, DISABLED_MultiThreadPerf)
   {
     constexpr int concurrency = 64;
     std::vector<Blobs::BlockBlobClient> blockBlobClients;
@@ -56,7 +56,7 @@ namespace Azure { namespace Storage { namespace Test {
               "MultiThreadPerf" + RandomString()));
     }
 
-    constexpr std::size_t bufferSize = static_cast<std::size_t>(100_MB);
+    constexpr std::size_t bufferSize = static_cast<std::size_t>(1_GB);
     std::vector<uint8_t> buffer = RandomBuffer(bufferSize);
 
     {
