@@ -4,6 +4,7 @@
 #include "azure/storage/common/shared_key_policy.hpp"
 
 #include "azure/core/http/http.hpp"
+#include "azure/core/strings.hpp"
 #include "azure/storage/common/crypt.hpp"
 
 #include <algorithm>
@@ -29,7 +30,7 @@ namespace Azure { namespace Storage {
           "If-Unmodified-Since",
           "Range"})
     {
-      auto ite = headers.find(Azure::Core::Details::ToLower(headerName));
+      auto ite = headers.find(Azure::Core::Strings::ToLower(headerName));
       if (ite != headers.end())
       {
         if (headerName == "Content-Length" && ite->second == "0")
@@ -51,10 +52,7 @@ namespace Azure { namespace Storage {
          ite != headers.end() && ite->first.substr(0, prefix.length()) == prefix;
          ++ite)
     {
-      std::string key = ite->first;
-      std::transform(key.begin(), key.end(), key.begin(), [](char c) {
-        return static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-      });
+      std::string key = Azure::Core::Strings::ToLower(ite->first);
       ordered_kv.emplace_back(std::make_pair(std::move(key), ite->second));
     }
     std::sort(ordered_kv.begin(), ordered_kv.end());
@@ -68,10 +66,7 @@ namespace Azure { namespace Storage {
     string_to_sign += "/" + m_credential->AccountName + "/" + request.GetUrl().GetPath() + "\n";
     for (const auto& query : request.GetUrl().GetQueryParameters())
     {
-      std::string key = query.first;
-      std::transform(key.begin(), key.end(), key.begin(), [](char c) {
-        return static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-      });
+      std::string key = Azure::Core::Strings::ToLower(query.first);
       ordered_kv.emplace_back(std::make_pair(
           Azure::Core::Http::Url::Decode(key), Azure::Core::Http::Url::Decode(query.second)));
     }

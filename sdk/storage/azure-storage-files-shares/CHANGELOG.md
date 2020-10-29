@@ -1,5 +1,18 @@
 # Release History
 
+## 1.0.0-beta.5 (Unreleased)
+
+### Breaking Changes
+* `Azure::Storage::Files::Shares::Metrics::IncludeAPIs` is now renamed to `Azure::Storage::Files::Shares::Metrics::IncludeApis`, and is changed to a nullable member.
+* Move header `azure/storage/files/shares/shares.hpp` to `azure/storage/files/shares.hpp`
+
+
+## 1.0.0-beta.4 (2020-10-16)
+
+### Bug Fixes
+
+* Unencoded Share/File/Directory name is now encoded.
+
 ## 1.0.0-beta.3 (2020-10-13)
 
 ### New Features

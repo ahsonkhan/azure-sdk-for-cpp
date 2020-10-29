@@ -12,11 +12,11 @@
 #include "azure/storage/common/storage_common.hpp"
 #include "azure/storage/common/storage_per_retry_policy.hpp"
 #include "azure/storage/common/storage_retry_policy.hpp"
-#include "azure/storage/common/storage_version.hpp"
 #include "azure/storage/files/datalake/datalake_directory_client.hpp"
 #include "azure/storage/files/datalake/datalake_file_client.hpp"
 #include "azure/storage/files/datalake/datalake_path_client.hpp"
 #include "azure/storage/files/datalake/datalake_utilities.hpp"
+#include "azure/storage/files/datalake/version.hpp"
 
 namespace Azure { namespace Storage { namespace Files { namespace DataLake {
   namespace {
@@ -46,7 +46,7 @@ namespace Azure { namespace Storage { namespace Files { namespace DataLake {
   {
     auto parsedConnectionString = Azure::Storage::Details::ParseConnectionString(connectionString);
     auto fileSystemUri = std::move(parsedConnectionString.DataLakeServiceUri);
-    fileSystemUri.AppendPath(fileSystemName);
+    fileSystemUri.AppendPath(Storage::Details::UrlEncodePath(fileSystemName));
 
     if (parsedConnectionString.KeyCredential)
     {
@@ -72,7 +72,7 @@ namespace Azure { namespace Storage { namespace Files { namespace DataLake {
 
     std::vector<std::unique_ptr<Azure::Core::Http::HttpPolicy>> policies;
     policies.emplace_back(std::make_unique<Azure::Core::Http::TelemetryPolicy>(
-        Azure::Storage::Details::c_DatalakeServicePackageName, DataLakeServiceVersion));
+        Azure::Storage::Details::c_DatalakeServicePackageName, Version::VersionString()));
     policies.emplace_back(std::make_unique<Azure::Core::Http::RequestIdPolicy>());
     for (const auto& p : options.PerOperationPolicies)
     {
@@ -106,7 +106,7 @@ namespace Azure { namespace Storage { namespace Files { namespace DataLake {
   {
     std::vector<std::unique_ptr<Azure::Core::Http::HttpPolicy>> policies;
     policies.emplace_back(std::make_unique<Azure::Core::Http::TelemetryPolicy>(
-        Azure::Storage::Details::c_DatalakeServicePackageName, DataLakeServiceVersion));
+        Azure::Storage::Details::c_DatalakeServicePackageName, Version::VersionString()));
     policies.emplace_back(std::make_unique<Azure::Core::Http::RequestIdPolicy>());
     for (const auto& p : options.PerOperationPolicies)
     {
@@ -139,7 +139,7 @@ namespace Azure { namespace Storage { namespace Files { namespace DataLake {
   {
     std::vector<std::unique_ptr<Azure::Core::Http::HttpPolicy>> policies;
     policies.emplace_back(std::make_unique<Azure::Core::Http::TelemetryPolicy>(
-        Azure::Storage::Details::c_DatalakeServicePackageName, DataLakeServiceVersion));
+        Azure::Storage::Details::c_DatalakeServicePackageName, Version::VersionString()));
     policies.emplace_back(std::make_unique<Azure::Core::Http::RequestIdPolicy>());
     for (const auto& p : options.PerOperationPolicies)
     {
@@ -163,7 +163,7 @@ namespace Azure { namespace Storage { namespace Files { namespace DataLake {
   PathClient FileSystemClient::GetPathClient(const std::string& path) const
   {
     auto builder = m_dfsUri;
-    builder.AppendPath(path);
+    builder.AppendPath(Storage::Details::UrlEncodePath(path));
     return PathClient(builder, m_blobContainerClient.GetBlobClient(path), m_pipeline);
   }
 
@@ -171,7 +171,7 @@ namespace Azure { namespace Storage { namespace Files { namespace DataLake {
   {
 
     auto builder = m_dfsUri;
-    builder.AppendPath(path);
+    builder.AppendPath(Storage::Details::UrlEncodePath(path));
     auto blobClient = m_blobContainerClient.GetBlobClient(path);
     auto blockBlobClient = blobClient.GetBlockBlobClient();
     return FileClient(
@@ -181,7 +181,7 @@ namespace Azure { namespace Storage { namespace Files { namespace DataLake {
   DirectoryClient FileSystemClient::GetDirectoryClient(const std::string& path) const
   {
     auto builder = m_dfsUri;
-    builder.AppendPath(path);
+    builder.AppendPath(Storage::Details::UrlEncodePath(path));
     return DirectoryClient(builder, m_blobContainerClient.GetBlobClient(path), m_pipeline);
   }
 

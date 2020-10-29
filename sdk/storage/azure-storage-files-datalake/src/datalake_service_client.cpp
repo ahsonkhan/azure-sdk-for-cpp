@@ -12,9 +12,9 @@
 #include "azure/storage/common/storage_credential.hpp"
 #include "azure/storage/common/storage_per_retry_policy.hpp"
 #include "azure/storage/common/storage_retry_policy.hpp"
-#include "azure/storage/common/storage_version.hpp"
 #include "azure/storage/files/datalake/datalake_file_system_client.hpp"
 #include "azure/storage/files/datalake/datalake_utilities.hpp"
+#include "azure/storage/files/datalake/version.hpp"
 
 namespace Azure { namespace Storage { namespace Files { namespace DataLake {
   namespace {
@@ -80,7 +80,7 @@ namespace Azure { namespace Storage { namespace Files { namespace DataLake {
   {
     std::vector<std::unique_ptr<Azure::Core::Http::HttpPolicy>> policies;
     policies.emplace_back(std::make_unique<Azure::Core::Http::TelemetryPolicy>(
-        Azure::Storage::Details::c_DatalakeServicePackageName, DataLakeServiceVersion));
+        Azure::Storage::Details::c_DatalakeServicePackageName, Version::VersionString()));
     policies.emplace_back(std::make_unique<Azure::Core::Http::RequestIdPolicy>());
     for (const auto& p : options.PerOperationPolicies)
     {
@@ -112,7 +112,7 @@ namespace Azure { namespace Storage { namespace Files { namespace DataLake {
   {
     std::vector<std::unique_ptr<Azure::Core::Http::HttpPolicy>> policies;
     policies.emplace_back(std::make_unique<Azure::Core::Http::TelemetryPolicy>(
-        Azure::Storage::Details::c_DatalakeServicePackageName, DataLakeServiceVersion));
+        Azure::Storage::Details::c_DatalakeServicePackageName, Version::VersionString()));
     policies.emplace_back(std::make_unique<Azure::Core::Http::RequestIdPolicy>());
     for (const auto& p : options.PerOperationPolicies)
     {
@@ -141,7 +141,7 @@ namespace Azure { namespace Storage { namespace Files { namespace DataLake {
   {
     std::vector<std::unique_ptr<Azure::Core::Http::HttpPolicy>> policies;
     policies.emplace_back(std::make_unique<Azure::Core::Http::TelemetryPolicy>(
-        Azure::Storage::Details::c_DatalakeServicePackageName, DataLakeServiceVersion));
+        Azure::Storage::Details::c_DatalakeServicePackageName, Version::VersionString()));
     policies.emplace_back(std::make_unique<Azure::Core::Http::RequestIdPolicy>());
     for (const auto& p : options.PerOperationPolicies)
     {
@@ -164,7 +164,7 @@ namespace Azure { namespace Storage { namespace Files { namespace DataLake {
   FileSystemClient ServiceClient::GetFileSystemClient(const std::string& fileSystemName) const
   {
     auto builder = m_dfsUri;
-    builder.AppendPath(fileSystemName);
+    builder.AppendPath(Storage::Details::UrlEncodePath(fileSystemName));
     return FileSystemClient(
         builder, m_blobServiceClient.GetBlobContainerClient(fileSystemName), m_pipeline);
   }
@@ -179,8 +179,8 @@ namespace Azure { namespace Storage { namespace Files { namespace DataLake {
     blobOptions.MaxResults = options.MaxResults;
     auto result = m_blobServiceClient.ListBlobContainersSegment(blobOptions);
     auto response = ListFileSystemsSegmentResult();
-    response.ContinuationToken
-        = result->ContinuationToken.empty() ? response.ContinuationToken : result->ContinuationToken;
+    response.ContinuationToken = result->ContinuationToken.empty() ? response.ContinuationToken
+                                                                   : result->ContinuationToken;
     response.Filesystems = FileSystemsFromContainerItems(result->Items);
     return Azure::Core::Response<ListFileSystemsSegmentResult>(
         std::move(response), result.ExtractRawResponse());

@@ -12,7 +12,6 @@
 #include "azure/core/context.hpp"
 #include "azure/core/http/http.hpp"
 #include "azure/core/http/policy.hpp"
-#include "azure/core/internal/log.hpp"
 
 #include <chrono>
 #include <curl/curl.h>
@@ -26,8 +25,7 @@
 #ifdef TESTING_BUILD
 // Define the class name that reads from ConnectionPool private members
 namespace Azure { namespace Core { namespace Test {
-  class TransportAdapter_ConnectionPoolCleaner_Test;
-  class TransportAdapter_getMultiThread_Test;
+  class TransportAdapter_connectionPoolTest_Test;
 }}} // namespace Azure::Core::Test
 #endif
 
@@ -104,15 +102,14 @@ namespace Azure { namespace Core { namespace Http {
    * @brief CURL HTTP connection pool makes it possible to re-use one curl connection to perform
    * more than one request. Use this component when connections are not re-used by default.
    *
-   * This pool offers static methods and it is allocated statically. There can be only one connection
-   * pool per application.
+   * This pool offers static methods and it is allocated statically. There can be only one
+   * connection pool per application.
    */
   struct CurlConnectionPool
   {
 #ifdef TESTING_BUILD
     // Give access to private to this tests class
-    friend class Azure::Core::Test::TransportAdapter_getMultiThread_Test;
-    friend class Azure::Core::Test::TransportAdapter_ConnectionPoolCleaner_Test;
+    friend class Azure::Core::Test::TransportAdapter_connectionPoolTest_Test;
 #endif
 
     /**
@@ -184,9 +181,9 @@ namespace Azure { namespace Core { namespace Http {
    * @brief Stateful component that controls sending an HTTP Request with libcurl over the wire.
    *
    * @remark This component does not use the classic libcurl easy interface to send and receive
-   * bytes from the network using callbacks. Instead, `CurlSession` supports working with the custom HTTP
-   * protocol option from libcurl to manually upload and download bytes from the network socket using
-   * curl_easy_send() and curl_easy_recv().
+   * bytes from the network using callbacks. Instead, `CurlSession` supports working with the custom
+   * HTTP protocol option from libcurl to manually upload and download bytes from the network socket
+   * using curl_easy_send() and curl_easy_recv().
    *
    * @remarks This component is expected to be used by an HTTP Transporter to ensure that
    * transporter to be reusable in multiple pipelines while every call to network is unique.
@@ -203,6 +200,22 @@ namespace Azure { namespace Core { namespace Http {
       StatusLine,
       Headers,
       EndOfHeaders,
+    };
+
+    /**
+     * @brief This is used to set the current state of a session.
+     *
+     * @remark The session needs to know what's the state on it when an exception occurs so the
+     * connection is not moved back to the connection pool. When a new request is going to be sent,
+     * the session will be in `PERFORM` until the request has been uploaded and a response code is
+     * received from the server. At that point the state will change to `STREAMING`.
+     * If there is any error before changing the state, the connection need to be cleaned up.
+     *
+     */
+    enum class SessionState
+    {
+      PERFORM,
+      STREAMING
     };
 
     /**
@@ -341,6 +354,16 @@ namespace Azure { namespace Core { namespace Http {
     curl_socket_t m_curlSocket;
 
     /**
+     * @brief The current state of the session.
+     *
+     * @remark The state of the session is used to determine if a connection can be moved back to
+     * the connection pool or not. A connection can be re-used only when the session state is
+     * `STREAMING` and the response has been read completely.
+     *
+     */
+    SessionState m_sessionState;
+
+    /**
      * @brief unique ptr for the HTTP RawResponse. The session is responsable for creating the
      * response once that an HTTP status line is received.
      *
@@ -352,13 +375,6 @@ namespace Azure { namespace Core { namespace Http {
      *
      */
     Request& m_request;
-
-    /**
-     * @brief Controls the progress of a body buffer upload when using libcurl callbacks. Woks
-     * like an offset to move the pointer to read the body from the HTTP Request on each callback.
-     *
-     */
-    int64_t m_uploadedBytes;
 
     /**
      * @brief Control field to handle the case when part of HTTP response body was copied to the
@@ -432,22 +448,6 @@ namespace Azure { namespace Core { namespace Http {
      * @return returns the libcurl result after setting up.
      */
     CURLcode SetHeaders();
-
-    /**
-     * @brief Set up libcurl callback functions for writing and user data. User data ptr for all
-     * callbacks is set to reference the session object.
-     *
-     * @return returns the libcurl result after setting up.
-     */
-    CURLcode SetWriteResponse();
-
-    /**
-     * @brief Set up libcurl callback functions for reading and user data. User data ptr for all
-     * callbacks is set to reference the session object.
-     *
-     * @return returns the libcurl result after setting up.
-     */
-    CURLcode SetReadRequest();
 
     /**
      * @brief Function used when working with Streams to manually write from the HTTP Request to
@@ -525,15 +525,15 @@ namespace Azure { namespace Core { namespace Http {
      */
     bool IsEOF()
     {
-      return this->m_isChunkedResponseType ? this->m_chunkSize == 0
-                                           : this->m_contentLength == this->m_sessionTotalRead;
-    }
+      auto eof = this->m_isChunkedResponseType ? this->m_chunkSize == 0
+                                               : this->m_contentLength == this->m_sessionTotalRead;
 
-    /**
-     * @brief The function to log.
-     *
-     */
-    std::function<void(std::string const& message)> m_logger;
+      // `IsEOF` is called before trying to move a connection back to the connection pool.
+      // If the session state is `PERFORM` it means the request could not complete an upload
+      // operation (might have throw while uploading).
+      // Connection should not be moved back to the connection pool on this scenario.
+      return eof && m_sessionState != SessionState::PERFORM;
+    }
 
   public:
     /**
@@ -541,19 +541,12 @@ namespace Azure { namespace Core { namespace Http {
      *
      * @param request reference to an HTTP Request.
      */
-    CurlSession(Request& request)
-        : CurlSession(request, [](std::string const& message) { (void)message; })
-    {
-    }
-
-    CurlSession(Request& request, std::function<void(std::string const& message)> logger)
-        : m_request(request), m_logger(logger)
+    CurlSession(Request& request) : m_request(request)
     {
       this->m_connection = CurlConnectionPool::GetCurlConnection(this->m_request);
       this->m_bodyStartInBuffer = -1;
       this->m_innerBufferSize = Details::c_DefaultLibcurlReaderSize;
       this->m_isChunkedResponseType = false;
-      this->m_uploadedBytes = 0;
       this->m_sessionTotalRead = 0;
     }
 
@@ -564,6 +557,7 @@ namespace Azure { namespace Core { namespace Http {
       // in the wire.
       // By not moving the connection back to the pool, it gets destroyed calling the connection
       // destructor to clean libcurl handle and close the connection.
+      // IsEOF will also handle a connection that fail to complete an upload request.
       if (this->IsEOF())
       {
         CurlConnectionPool::MoveConnectionBackToPool(

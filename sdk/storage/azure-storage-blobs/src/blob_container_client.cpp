@@ -8,11 +8,11 @@
 #include "azure/storage/blobs/append_blob_client.hpp"
 #include "azure/storage/blobs/block_blob_client.hpp"
 #include "azure/storage/blobs/page_blob_client.hpp"
+#include "azure/storage/blobs/version.hpp"
 #include "azure/storage/common/constants.hpp"
 #include "azure/storage/common/shared_key_policy.hpp"
 #include "azure/storage/common/storage_common.hpp"
 #include "azure/storage/common/storage_per_retry_policy.hpp"
-#include "azure/storage/common/storage_version.hpp"
 
 namespace Azure { namespace Storage { namespace Blobs {
 
@@ -23,7 +23,7 @@ namespace Azure { namespace Storage { namespace Blobs {
   {
     auto parsedConnectionString = Details::ParseConnectionString(connectionString);
     auto containerUri = std::move(parsedConnectionString.BlobServiceUri);
-    containerUri.AppendPath(containerName);
+    containerUri.AppendPath(Details::UrlEncodePath(containerName));
 
     if (parsedConnectionString.KeyCredential)
     {
@@ -44,7 +44,7 @@ namespace Azure { namespace Storage { namespace Blobs {
   {
     std::vector<std::unique_ptr<Azure::Core::Http::HttpPolicy>> policies;
     policies.emplace_back(std::make_unique<Azure::Core::Http::TelemetryPolicy>(
-        Details::c_BlobServicePackageName, BlobServiceVersion));
+        Details::c_BlobServicePackageName, Version::VersionString()));
     policies.emplace_back(std::make_unique<Azure::Core::Http::RequestIdPolicy>());
     for (const auto& p : options.PerOperationPolicies)
     {
@@ -70,7 +70,7 @@ namespace Azure { namespace Storage { namespace Blobs {
   {
     std::vector<std::unique_ptr<Azure::Core::Http::HttpPolicy>> policies;
     policies.emplace_back(std::make_unique<Azure::Core::Http::TelemetryPolicy>(
-        Details::c_BlobServicePackageName, BlobServiceVersion));
+        Details::c_BlobServicePackageName, Version::VersionString()));
     policies.emplace_back(std::make_unique<Azure::Core::Http::RequestIdPolicy>());
     for (const auto& p : options.PerOperationPolicies)
     {
@@ -97,7 +97,7 @@ namespace Azure { namespace Storage { namespace Blobs {
   {
     std::vector<std::unique_ptr<Azure::Core::Http::HttpPolicy>> policies;
     policies.emplace_back(std::make_unique<Azure::Core::Http::TelemetryPolicy>(
-        Details::c_BlobServicePackageName, BlobServiceVersion));
+        Details::c_BlobServicePackageName, Version::VersionString()));
     policies.emplace_back(std::make_unique<Azure::Core::Http::RequestIdPolicy>());
     for (const auto& p : options.PerOperationPolicies)
     {
@@ -117,7 +117,7 @@ namespace Azure { namespace Storage { namespace Blobs {
   BlobClient BlobContainerClient::GetBlobClient(const std::string& blobName) const
   {
     auto blobUri = m_containerUrl;
-    blobUri.AppendPath(blobName);
+    blobUri.AppendPath(Details::UrlEncodePath(blobName));
     return BlobClient(std::move(blobUri), m_pipeline, m_customerProvidedKey, m_encryptionScope);
   }
 

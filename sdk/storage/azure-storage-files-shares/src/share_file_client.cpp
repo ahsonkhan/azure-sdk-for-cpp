@@ -14,8 +14,8 @@
 #include "azure/storage/common/storage_common.hpp"
 #include "azure/storage/common/storage_per_retry_policy.hpp"
 #include "azure/storage/common/storage_retry_policy.hpp"
-#include "azure/storage/common/storage_version.hpp"
 #include "azure/storage/files/shares/share_constants.hpp"
+#include "azure/storage/files/shares/version.hpp"
 
 namespace Azure { namespace Storage { namespace Files { namespace Shares {
 
@@ -27,8 +27,8 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
   {
     auto parsedConnectionString = Azure::Storage::Details::ParseConnectionString(connectionString);
     auto fileUri = std::move(parsedConnectionString.FileServiceUri);
-    fileUri.AppendPath(shareName);
-    fileUri.AppendPath(filePath);
+    fileUri.AppendPath(Storage::Details::UrlEncodePath(shareName));
+    fileUri.AppendPath(Storage::Details::UrlEncodePath(filePath));
 
     if (parsedConnectionString.KeyCredential)
     {
@@ -49,7 +49,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
 
     std::vector<std::unique_ptr<Azure::Core::Http::HttpPolicy>> policies;
     policies.emplace_back(std::make_unique<Azure::Core::Http::TelemetryPolicy>(
-        Azure::Storage::Details::c_FileServicePackageName, FileServiceVersion));
+        Azure::Storage::Details::c_FileServicePackageName, Version::VersionString()));
     policies.emplace_back(std::make_unique<Azure::Core::Http::RequestIdPolicy>());
     for (const auto& p : options.PerOperationPolicies)
     {
@@ -75,7 +75,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
   {
     std::vector<std::unique_ptr<Azure::Core::Http::HttpPolicy>> policies;
     policies.emplace_back(std::make_unique<Azure::Core::Http::TelemetryPolicy>(
-        Azure::Storage::Details::c_FileServicePackageName, FileServiceVersion));
+        Azure::Storage::Details::c_FileServicePackageName, Version::VersionString()));
     policies.emplace_back(std::make_unique<Azure::Core::Http::RequestIdPolicy>());
     for (const auto& p : options.PerOperationPolicies)
     {
@@ -99,7 +99,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
   {
     std::vector<std::unique_ptr<Azure::Core::Http::HttpPolicy>> policies;
     policies.emplace_back(std::make_unique<Azure::Core::Http::TelemetryPolicy>(
-        Azure::Storage::Details::c_FileServicePackageName, FileServiceVersion));
+        Azure::Storage::Details::c_FileServicePackageName, Version::VersionString()));
     policies.emplace_back(std::make_unique<Azure::Core::Http::RequestIdPolicy>());
     for (const auto& p : options.PerOperationPolicies)
     {
