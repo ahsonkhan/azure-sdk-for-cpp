@@ -6,7 +6,7 @@
  */
 
 #pragma once
-#ifndef BUILD_TRANSPORT_WINHTTP_ADAPTER
+//#ifdef BUILD_TRANSPORT_WINHTTP_ADAPTER
 
 #include "azure/core/http/http.hpp"
 #include "azure/core/http/policy.hpp"
@@ -20,7 +20,7 @@ namespace Azure { namespace Core { namespace Http {
    * @brief Concrete implementation of an HTTP Transport that uses WinHttp.
    *
    */
-  class WinHttpTansport : public HttpTransport {
+  class WinHttpTransport : public HttpTransport {
   public:
     /**
      * @brief Implements interface to send an HTTP Request and produce an HTTP RawResponse.
@@ -34,4 +34,4 @@ namespace Azure { namespace Core { namespace Http {
 
 }}} // namespace Azure::Core::Http
 
-#endif
+//#endif
