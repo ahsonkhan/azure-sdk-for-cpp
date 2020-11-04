@@ -89,30 +89,6 @@ void ParseHttpVersion(std::string httpVersion, uint16_t* majorVersion, uint16_t*
   *minorVersion = (uint16_t)minorVersionInt;
 }
 
-void ThrowAndCleanup(
-    HINTERNET sessionHandle,
-    HINTERNET connectionHandle,
-    HINTERNET requestHandle,
-    std::string exceptionMessage)
-{
-  if (requestHandle)
-  {
-    WinHttpCloseHandle(requestHandle);
-  }
-
-  if (connectionHandle)
-  {
-    WinHttpCloseHandle(connectionHandle);
-  }
-
-  if (sessionHandle)
-  {
-    WinHttpCloseHandle(sessionHandle);
-  }
-
-  throw Azure::Core::Http::TransportException(exceptionMessage);
-}
-
 void CleanupHandles(HINTERNET sessionHandle, HINTERNET connectionHandle, HINTERNET requestHandle)
 {
 
@@ -241,6 +217,9 @@ std::unique_ptr<RawResponse> WinHttpTransport::Send(Context const& context, Requ
     encodedHeaders = StringToWideString(requestHeaderString);
   }
 
+  auto streamBody = request.GetBodyStream();
+  int64_t streamLength = streamBody->Length();
+
   // Send a request.
   // TODO: For PUT/POST requests, send additional data using WinHttpWriteData.
   // TODO: Support chunked transfer encoding and missing content-length header.
@@ -250,7 +229,7 @@ std::unique_ptr<RawResponse> WinHttpTransport::Send(Context const& context, Requ
           encodedHeadersLength,
           WINHTTP_NO_REQUEST_DATA,
           0,
-          0,
+          streamLength > 0 ? static_cast<DWORD>(streamLength) : 0,
           0))
   {
     // Errors include:
@@ -274,6 +253,47 @@ std::unique_ptr<RawResponse> WinHttpTransport::Send(Context const& context, Requ
     // ERROR_WINHTTP_RESEND_REQUEST
     CleanupHandlesAndThrow(
         "Error while sending a request.", sessionHandle, connectionHandle, requestHandle);
+  }
+
+  // TODO: Allow chunked encoding transfer.
+  if (streamLength > 0 || streamLength == -1)
+  {
+    int64_t uploadChunkSize = request.GetUploadChunkSize();
+    if (uploadChunkSize <= 0)
+    {
+      // use default size
+      if (streamLength < Details::MaximumUploadChunkSize)
+      {
+        uploadChunkSize = streamLength;
+      }
+      else
+      {
+        uploadChunkSize = Details::DefaultUploadChunkSize;
+      }
+    }
+    auto unique_buffer = std::make_unique<uint8_t[]>(static_cast<size_t>(uploadChunkSize));
+
+    while (true)
+    {
+      auto rawRequestLen = streamBody->Read(context, unique_buffer.get(), uploadChunkSize);
+      if (rawRequestLen == 0)
+      {
+        break;
+      }
+
+      DWORD dwBytesWritten = 0;
+
+      // Write data to the server.
+      if (!WinHttpWriteData(
+              requestHandle,
+              unique_buffer.get(),
+              static_cast<DWORD>(rawRequestLen),
+              &dwBytesWritten))
+      {
+        CleanupHandlesAndThrow(
+            "Error while writing data.", sessionHandle, connectionHandle, requestHandle);
+      }
+    }
   }
 
   // End the request.
@@ -470,7 +490,7 @@ std::unique_ptr<RawResponse> WinHttpTransport::Send(Context const& context, Requ
   return rawResponse;
 }
 
-// Read from curl session
+// Read the response from the sent request.
 int64_t Details::WinHttpStream::Read(Context const& context, uint8_t* buffer, int64_t count)
 {
   context.ThrowIfCanceled();
