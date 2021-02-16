@@ -8,6 +8,7 @@
 
 #include <azure/identity/client_secret_credential.hpp>
 #include <azure/storage/common/shared_key_policy.hpp>
+#include <azure/core/version.hpp>
 
 namespace Azure { namespace Storage { namespace Test {
 
@@ -329,6 +330,9 @@ namespace Azure { namespace Storage { namespace Test {
 
   TEST_F(DataLakeDirectoryClientTest, DirectoryAccessControlRecursive)
   {
+    auto json = Azure::Core::Internal::Json::json::parse("{ \"happy\": true, \"pi\": 3.141 }");
+    Azure::Core::Details::Version v;
+    v.VersionString();
     // Setup directories.
     auto rootDirectoryName = RandomString();
     auto directoryName1 = RandomString();

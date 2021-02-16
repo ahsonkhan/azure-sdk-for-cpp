@@ -31,6 +31,8 @@
 #include <memory>
 #include <vector>
 
+// Move to Azure::Core::IO
+// If minimal set of bodstreams, move to Azure
 namespace Azure { namespace Core { namespace Http {
 
   /**
@@ -58,6 +60,7 @@ namespace Azure { namespace Core { namespace Http {
     /**
      * @brief Get the length of the data.
      * @remark Used with the HTTP `Content-Length` header.
+     * @remark Use -1 sentintel for "don't know" size
      */
     virtual int64_t Length() const = 0;
 
@@ -90,6 +93,7 @@ namespace Azure { namespace Core { namespace Http {
       return OnRead(context, buffer, count);
     };
 
+    // ReadToEndOrCount
     /**
      * @brief Read #BodyStream into a buffer until the buffer is filled, or until the stream is
      * read to end.

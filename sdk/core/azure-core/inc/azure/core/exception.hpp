@@ -23,5 +23,9 @@ namespace Azure { namespace Core {
      * @param message The error description.
      */
     explicit RequestFailedException(std::string const& message) : std::runtime_error(message) {}
+    // Sanitize headers similar to logging allow-list (headers and query parameters)
+    // Including: response headers
+    // Content: Log content configurable toggle - exception shows the content in .NET
+
   };
 }} // namespace Azure::Core

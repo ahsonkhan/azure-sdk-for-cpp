@@ -34,6 +34,7 @@ namespace Azure { namespace Storage { namespace Test {
   void BlockBlobClientTest::SetUpTestSuite()
   {
     BlobContainerClientTest::SetUpTestSuite();
+    Azure::Core::DateTime::clock::time_point current = Azure::Core::DateTime::clock::now();
 
     m_blobName = RandomString();
     auto blockBlobClient = Azure::Storage::Blobs::BlockBlobClient::CreateFromConnectionString(
@@ -43,6 +44,14 @@ namespace Azure { namespace Storage { namespace Test {
     m_blobContent.resize(static_cast<std::size_t>(8_MB));
     RandomBuffer(reinterpret_cast<char*>(&m_blobContent[0]), m_blobContent.size());
     m_blobUploadOptions.Metadata = {{"key1", "V1"}, {"key2", "Value2"}};
+    m_blobUploadOptions.Metadata["key1"] = "Value";
+
+    auto m = m_blobUploadOptions.Metadata;
+    Metadata::key_compare comparer;
+    comparer("foo", "Foo");
+
+    Azure::Core::DateTime::clock c;
+
     m_blobUploadOptions.HttpHeaders.ContentType = "application/x-binary";
     m_blobUploadOptions.HttpHeaders.ContentLanguage = "en-US";
     m_blobUploadOptions.HttpHeaders.ContentDisposition = "attachment";

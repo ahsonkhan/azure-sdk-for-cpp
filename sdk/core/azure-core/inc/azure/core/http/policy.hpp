@@ -108,6 +108,8 @@ namespace Azure { namespace Core { namespace Http {
     std::unique_ptr<RawResponse> Send(Context const& ctx, Request& req);
   };
 
+  // Add network timeout options that are configurable
+  // Default to 100s (in .NET)
   /**
    * @brief The options for the #TransportPolicy.
    *

@@ -264,6 +264,7 @@ namespace Azure { namespace Core { namespace Http {
      */
     static std::string Decode(const std::string& value);
 
+    // Add specific named Encode overloads that are convenient and self documenting
     /**
      * @brief Encodes \p value by escaping characters to the form of %HH where HH are hex digits.
      *
@@ -407,6 +408,7 @@ namespace Azure { namespace Core { namespace Http {
      */
     uint16_t GetPort() const { return m_port; }
 
+    // Rename to GetEncodedQueryParameters
     /**
      * @brief Provides a copy to the list of query parameters from the URL.
      *
@@ -521,7 +523,7 @@ namespace Azure { namespace Core { namespace Http {
      *
      * @param name The name for the header to be added.
      * @param value The value for the header to be added.
-     *
+     * @remark Overrides existing key value.
      * @throw if \p name is an invalid header key.
      */
     void AddHeader(std::string const& name, std::string const& value);
@@ -563,6 +565,7 @@ namespace Azure { namespace Core { namespace Http {
 
     /**
      * @brief Get HTTP message prior to HTTP body.
+     * Use "raw" in the name - GetRawHttpMessageStatusAndHeaders
      */
     std::string GetHTTPMessagePreBody() const;
 
@@ -587,6 +590,7 @@ namespace Azure { namespace Core { namespace Http {
     Url const& GetUrl() const { return this->m_url; }
     // Expected to be called by a Retry policy to reset all headers set after this function was
     // previously called
+    // Add "raw" in the name - clear/startretry header
     void StartTry();
   };
 

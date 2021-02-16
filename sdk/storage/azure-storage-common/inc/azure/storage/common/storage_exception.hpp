@@ -24,7 +24,9 @@ namespace Azure { namespace Storage {
     std::string ErrorCode;
     std::string Message;
     std::map<std::string, std::string> AdditionalInformation;
-    std::unique_ptr<Azure::Core::Http::RawResponse> RawResponse;
+    std::unique_ptr<Azure::Core::Http::RawResponse> RawResponse; 
+    // Exceptions shouldn't hold open a network connection, so close/dispose the underlying stream
+    // We return body buffer, not stream
 
     static StorageException CreateFromResponse(
         std::unique_ptr<Azure::Core::Http::RawResponse> response);
