@@ -9,8 +9,6 @@
 #include <azure/storage/common/crypt.hpp>
 #include <azure/storage/common/shared_key_policy.hpp>
 #include <azure/storage/common/storage_common.hpp>
-#include <azure/storage/common/storage_per_retry_policy.hpp>
-#include <azure/storage/common/storage_retry_policy.hpp>
 
 #include "azure/storage/files/shares/share_directory_client.hpp"
 #include "azure/storage/files/shares/share_file_client.hpp"
@@ -43,49 +41,31 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
       const ShareClientOptions& options)
       : m_shareUrl(shareUrl)
   {
-
-    std::vector<std::unique_ptr<Azure::Core::Http::HttpPolicy>> policies;
-    policies.emplace_back(std::make_unique<Azure::Core::Http::TelemetryPolicy>(
-        Azure::Storage::Details::FileServicePackageName, Details::Version::VersionString()));
-    policies.emplace_back(std::make_unique<Azure::Core::Http::RequestIdPolicy>());
-    for (const auto& p : options.PerOperationPolicies)
-    {
-      policies.emplace_back(p->Clone());
-    }
-    policies.emplace_back(
-        std::make_unique<Storage::Details::StorageRetryPolicy>(options.RetryOptions));
-    for (const auto& p : options.PerRetryPolicies)
-    {
-      policies.emplace_back(p->Clone());
-    }
-    policies.emplace_back(std::make_unique<Storage::Details::StoragePerRetryPolicy>());
-    policies.emplace_back(std::make_unique<Storage::Details::SharedKeyPolicy>(credential));
-    policies.emplace_back(
-        std::make_unique<Azure::Core::Http::TransportPolicy>(options.TransportPolicyOptions));
-    m_pipeline = std::make_shared<Azure::Core::Internal::Http::HttpPipeline>(policies);
+    Azure::Core::Http::TelemetryPolicyOptions telemetryPolicyOptions;
+    telemetryPolicyOptions.ApplicationId = options.ApplicationId;
+    m_pipeline = std::make_shared<Azure::Core::Internal::Http::HttpPipeline>(
+        Storage::Details::ConstructPolicies(
+            std::make_unique<Azure::Core::Http::TelemetryPolicy>(
+                Storage::Details::BlobServicePackageName,
+                Details::Version::VersionString(),
+                telemetryPolicyOptions),
+            std::make_unique<Storage::Details::SharedKeyPolicy>(credential),
+            options));
   }
 
   ShareClient::ShareClient(const std::string& shareUrl, const ShareClientOptions& options)
       : m_shareUrl(shareUrl)
   {
-    std::vector<std::unique_ptr<Azure::Core::Http::HttpPolicy>> policies;
-    policies.emplace_back(std::make_unique<Azure::Core::Http::TelemetryPolicy>(
-        Azure::Storage::Details::FileServicePackageName, Details::Version::VersionString()));
-    policies.emplace_back(std::make_unique<Azure::Core::Http::RequestIdPolicy>());
-    for (const auto& p : options.PerOperationPolicies)
-    {
-      policies.emplace_back(p->Clone());
-    }
-    policies.emplace_back(
-        std::make_unique<Storage::Details::StorageRetryPolicy>(options.RetryOptions));
-    for (const auto& p : options.PerRetryPolicies)
-    {
-      policies.emplace_back(p->Clone());
-    }
-    policies.emplace_back(std::make_unique<Storage::Details::StoragePerRetryPolicy>());
-    policies.emplace_back(
-        std::make_unique<Azure::Core::Http::TransportPolicy>(options.TransportPolicyOptions));
-    m_pipeline = std::make_shared<Azure::Core::Internal::Http::HttpPipeline>(policies);
+    Azure::Core::Http::TelemetryPolicyOptions telemetryPolicyOptions;
+    telemetryPolicyOptions.ApplicationId = options.ApplicationId;
+    m_pipeline = std::make_shared<Azure::Core::Internal::Http::HttpPipeline>(
+        Storage::Details::ConstructPolicies(
+            std::make_unique<Azure::Core::Http::TelemetryPolicy>(
+                Storage::Details::BlobServicePackageName,
+                Details::Version::VersionString(),
+                telemetryPolicyOptions),
+            nullptr,
+            options));
   }
 
   ShareDirectoryClient ShareClient::GetRootDirectoryClient() const
@@ -204,7 +184,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
       const GetSharePropertiesOptions& options,
       const Azure::Core::Context& context) const
   {
-    unused(options);
+    (void)options;
     auto protocolLayerOptions = Details::ShareRestClient::Share::GetPropertiesOptions();
     return Details::ShareRestClient::Share::GetProperties(
         m_shareUrl, *m_pipeline, context, protocolLayerOptions);
@@ -226,7 +206,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
       const SetShareMetadataOptions& options,
       const Azure::Core::Context& context) const
   {
-    unused(options);
+    (void)options;
     auto protocolLayerOptions = Details::ShareRestClient::Share::SetMetadataOptions();
     protocolLayerOptions.Metadata = metadata;
     return Details::ShareRestClient::Share::SetMetadata(
@@ -237,7 +217,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
       const GetShareAccessPolicyOptions& options,
       const Azure::Core::Context& context) const
   {
-    unused(options);
+    (void)options;
     auto protocolLayerOptions = Details::ShareRestClient::Share::GetAccessPolicyOptions();
     return Details::ShareRestClient::Share::GetAccessPolicy(
         m_shareUrl, *m_pipeline, context, protocolLayerOptions);
@@ -248,7 +228,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
       const SetShareAccessPolicyOptions& options,
       const Azure::Core::Context& context) const
   {
-    unused(options);
+    (void)options;
     auto protocolLayerOptions = Details::ShareRestClient::Share::SetAccessPolicyOptions();
     protocolLayerOptions.ShareAcl = accessPolicy;
     return Details::ShareRestClient::Share::SetAccessPolicy(
@@ -259,7 +239,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
       const GetShareStatsOptions& options,
       const Azure::Core::Context& context) const
   {
-    unused(options);
+    (void)options;
     auto protocolLayerOptions = Details::ShareRestClient::Share::GetStatisticsOptions();
     return Details::ShareRestClient::Share::GetStatistics(
         m_shareUrl, *m_pipeline, context, protocolLayerOptions);
@@ -270,7 +250,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
       const CreateSharePermissionOptions& options,
       const Azure::Core::Context& context) const
   {
-    unused(options);
+    (void)options;
     auto protocolLayerOptions = Details::ShareRestClient::Share::CreatePermissionOptions();
     protocolLayerOptions.Permission.FilePermission = permission;
     return Details::ShareRestClient::Share::CreatePermission(
@@ -282,7 +262,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
       const GetSharePermissionOptions& options,
       const Azure::Core::Context& context) const
   {
-    unused(options);
+    (void)options;
     auto protocolLayerOptions = Details::ShareRestClient::Share::GetPermissionOptions();
     protocolLayerOptions.FilePermissionKeyRequired = permissionKey;
     return Details::ShareRestClient::Share::GetPermission(

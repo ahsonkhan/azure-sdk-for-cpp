@@ -319,7 +319,10 @@ static std::unique_ptr<RawResponse> CreateHTTPResponse(
   // So this memory gets delegated outside Curl Transport as a shared ptr so memory will be
   // eventually released
   return std::make_unique<RawResponse>(
-      (uint16_t)majorVersion, (uint16_t)minorVersion, HttpStatusCode(statusCode), reasonPhrase);
+      static_cast<uint16_t>(majorVersion),
+      static_cast<uint16_t>(minorVersion),
+      HttpStatusCode(statusCode),
+      reasonPhrase);
 }
 
 // Creates an HTTP Response with specific bodyType
@@ -1077,7 +1080,7 @@ inline std::string GetConnectionKey(std::string const& host, CurlTransportOption
   {
     key.append("0");
   }
-  if (options.SSLOptions.NoRevoke)
+  if (!options.SSLOptions.EnableCertificateRevocationListCheck)
   {
     key.append("1");
   }
@@ -1202,7 +1205,7 @@ std::unique_ptr<CurlNetworkConnection> CurlConnectionPool::GetCurlConnection(
   }
 
   long sslOption = 0;
-  if (options.SSLOptions.NoRevoke)
+  if (!options.SSLOptions.EnableCertificateRevocationListCheck)
   {
     sslOption |= CURLSSLOPT_NO_REVOKE;
   }

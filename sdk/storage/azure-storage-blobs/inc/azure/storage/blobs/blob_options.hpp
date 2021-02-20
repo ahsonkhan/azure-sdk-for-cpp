@@ -155,6 +155,16 @@ namespace Azure { namespace Storage { namespace Blobs {
      * @brief Customized HTTP client. We're going to use the default one if this is empty.
      */
     Azure::Core::Http::TransportPolicyOptions TransportPolicyOptions;
+
+    /**
+     * @brief The last part of the user agent for telemetry.
+     */
+    std::string ApplicationId;
+
+    /**
+     * API version used by this client.
+     */
+    std::string ApiVersion = Details::ApiVersion;
   };
 
   /**
@@ -434,7 +444,7 @@ namespace Azure { namespace Storage { namespace Blobs {
   struct SetBlobAccessTierOptions
   {
     /**
-     * @beirf Indicates the priority with which to rehydrate an archived blob. The priority
+     * @brief Indicates the priority with which to rehydrate an archived blob. The priority
      * can be set on a blob only once. This header will be ignored on subsequent requests to the
      * same blob.
      */
@@ -471,14 +481,14 @@ namespace Azure { namespace Storage { namespace Blobs {
     Azure::Core::Nullable<Models::AccessTier> Tier;
 
     /**
-     * @beirf Indicates the priority with which to rehydrate an archived blob. The priority
+     * @brief Indicates the priority with which to rehydrate an archived blob. The priority
      * can be set on a blob only once. This header will be ignored on subsequent requests to the
      * same blob.
      */
     Azure::Core::Nullable<Models::RehydratePriority> RehydratePriority;
 
     /**
-     * @beirf If the destination blob should be sealed. Only applicable for Append Blobs.
+     * @brief If the destination blob should be sealed. Only applicable for Append Blobs.
      */
     Azure::Core::Nullable<bool> ShouldSealDestination;
   };

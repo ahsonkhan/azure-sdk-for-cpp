@@ -3,7 +3,7 @@
 
 /**
  * @file
- * @brief #HttpTransport implementation via CURL.
+ * @brief #Azure::Core::Http::HttpTransport implementation via CURL.
  */
 
 #pragma once
@@ -24,14 +24,14 @@ namespace Azure { namespace Core { namespace Http {
   struct CurlTransportSSLOptions
   {
     /**
-     * @brief This option can disable the revocation list check.
+     * @brief This option can enable the revocation list check.
      *
      * @remark Libcurl does revocation list check by default for ssl backends that supports this
      * feature. However, the Azure SDK overrides libcurl's behavior and disables the revocation list
      * check by default.
      *
      */
-    bool NoRevoke = true;
+    bool EnableCertificateRevocationListCheck = false;
   };
 
   /**
@@ -112,7 +112,7 @@ namespace Azure { namespace Core { namespace Http {
     /**
      * @brief Implements interface to send an HTTP Request and produce an HTTP RawResponse
      *
-     * @param context #Context so that operation can be cancelled.
+     * @param context #Azure::Core::Context so that operation can be cancelled.
      * @param request an HTTP Request to be send.
      * @return unique ptr to an HTTP RawResponse.
      */
