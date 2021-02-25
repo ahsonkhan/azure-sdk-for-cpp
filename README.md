@@ -137,15 +137,15 @@ Many client library operations **return** the templated `Azure::Core::Response<T
 ```C++
   std::string containerName = "testcontainer";
 
-  BlobContainerClient clientSource = 
+  BlobContainerClient containerClient = 
       BlobContainerClient::CreateFromConnectionString(GetConnectionString(), containerName);
 
-  // Azure service operation returns a Response<T> templated type
+  // Azure service operations return a Response<T> templated type
   Azure::Core::Response<Models::ListBlobsSinglePageResult> blobListOperation = 
-      clientSource.ListBlobsSinglePage();
+      containerClient.ListBlobsSinglePage();
 
   // You can extract the T, from the returned Response<T>, 
-  // which is typically  named with a Result suffix in the type name.
+  // which is typically named with a Result suffix in the type name.
   Models::ListBlobsSinglePageResult result = blobListOperation.ExtractValue();
 
   // Now you can look at API specific members on the result object that is returned.
