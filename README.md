@@ -66,6 +66,8 @@ In order to use the SDK installed via vcpkg with CMake, you can use the toolchai
 > cmake --build [build directory]
 ```
 
+#### Using the SDK within your Application
+
 The **entry point** for most scenarios when using the SDK will be a top-level client type corresponding to the Azure service you want to talk to. For example, sending requests to blob storage can be done via the `Azure::Storage::Blobs::BlobClient` API.
 
 All the Azure C++ SDK headers needed to be included are located within the `<azure>` folder, with sub-folders corresponding to each service. Similarly, all types and APIs can be found within the `Azure::` namespace. For example, to use functionality form `Azure::Core`, include the following header at the beginning of your application `#include <azure/core.hpp>`.
@@ -74,9 +76,12 @@ Here's an example application to help you get started:
 
 ```C++
 #include <iostream>
+
+// Include the necessary SDK headers
 #include <azure/core.hpp>
 #include <azure/storage/blobs.hpp>
 
+// Use the appropriate namespace using directives
 using namespace Azure::Storage::Blobs;
 
 // Get the required connection string/key from an environment variable or Azure KeyVault.
@@ -89,8 +94,18 @@ int main()
 
   try
   {
-    auto client = BlobClient::CreateFromConnectionString(
+    // There are many types of client types, use the one that's appropriate
+    // for your scenario, such as BlobContainerClient.
+    BlobClient client = BlobClient::CreateFromConnectionString(
         GetConnectionString(), containerName, blobName);
+    BlockBlobClient block = client.AsBlockBlobClient();
+
+    Azure::Core::Response<Models::UploadBlockBlobResult> response = block.Upload(&stream);
+
+    Models::UploadBlockBlobResult model = response.ExtractValue();
+    printf("Last modified date of uploaded blob: %s\n", 
+        model.LastModified.GetString(Azure::Core::DateTime::DateFormat::Rfc3339).c_str());
+
   }
   catch (const Azure::Core::RequestFailedException& e)
   {
@@ -101,7 +116,51 @@ int main()
 }
 ```
 
-Understanding the key concepts from the `azure-core-cpp` library, which is leveraged by all client libraries will also be helpful in getting started, regardless of which Azure service you want to use. You can find more information about them, with sample code snippets, here: https://github.com/Azure/azure-sdk-for-cpp/tree/master/sdk/core/azure-core#key-concepts
+#### Key Core concepts
+
+Understanding the key concepts from the `azure-core-cpp` library, which is leveraged by all client libraries will also be helpful in getting started, regardless of which Azure service you want to use.
+
+The main shared concepts of `Azure::Core` include:
+
+- HTTP pipeline and HTTP policies such as retry and logging, which are configurable via service client specific options.
+- Handling streaming data and input/output (I/O) via `BodyStream` along with its derived types.
+- Accessing HTTP response details for the returned model of any SDK client operation, via `Response<T>`.
+- Polling long-running operations (LROs), via `Operation<T>`.
+- Exceptions for reporting errors from service requests in a consistent fashion via the base exception type `RequestFailedException`.
+- Abstractions for Azure SDK credentials (`TokenCredential`).
+- Replaceable HTTP transport layer to send requests and receive responses over the network.
+
+#### `Response <T>` Model Types
+
+Many client library operations **return** the templated `Azure::Core::Response<T>` type from the API calls.
+
+#### Long Running Operations
+
+Some operations take a long time to complete and require polling for their status. Methods starting long-running operations return `Operation<T>` types.
+
+You can intermittently poll whether the operation has finished by using the `Poll()` method on the returned `Operation<T>` and track progress of the operation using `Value()`. Alternatively, if you just want to wait until the operation completes, you can use `PollUntilDone()`.
+
+```C++
+SomeServiceClient client;
+
+auto operation = *client.StartSomeLongRunningOperation();
+
+while (!operation.IsDone())
+{ 
+  std::unique_ptr<Http::RawResponse> response = operation.Poll();
+
+  auto partialResult = operation.Value();
+  
+  // Your per-polling custom logic goes here, such as logging progress.
+
+  // You can also try to abort the operation if it doesn't complete in time.
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+};
+
+auto finalResult = operation.Value();
+
+```
 
 #### Visual Studio - CMakeSettings.json
 
