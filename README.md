@@ -132,7 +132,29 @@ The main shared concepts of `Azure::Core` include:
 
 #### `Response <T>` Model Types
 
-Many client library operations **return** the templated `Azure::Core::Response<T>` type from the API calls.
+Many client library operations **return** the templated `Azure::Core::Response<T>` type from the API calls. This type let's you get the raw HTTP response from the service request call the Azure service APIs make, along with the result of the operation to get more API specific details. This is the templated `T` operation result which can be extracted from the response.
+
+```C++
+  std::string containerName = "testcontainer";
+
+  BlobContainerClient clientSource = 
+      BlobContainerClient::CreateFromConnectionString(GetConnectionString(), containerName);
+
+  // Azure service operation returns a Response<T> templated type
+  Azure::Core::Response<Models::ListBlobsSinglePageResult> blobListOperation = 
+      clientSource.ListBlobsSinglePage();
+
+  // You can extract the T, from the returned Response<T>, 
+  // which is typically  named with a Result suffix in the type name.
+  Models::ListBlobsSinglePageResult result = blobListOperation.ExtractValue();
+
+  // Now you can look at API specific members on the result object that is returned.
+  std::vector<Models::BlobItem> blobList = result.Items;
+  for (auto& blob : blobList)
+  {  
+    // Iterate over the blob list within the container.
+  }
+```
 
 #### Long Running Operations
 
