@@ -68,7 +68,7 @@ In order to use the SDK installed via vcpkg with CMake, you can use the toolchai
 
 #### Using the SDK within your Application
 
-The **entry point** for most scenarios when using the SDK will be a top-level client type corresponding to the Azure service you want to talk to. For example, sending requests to blob storage can be done via the `Azure::Storage::Blobs::BlobClient` API.
+The **entry point** for most scenarios when using the SDK will be a top-level client type corresponding to the Azure service you want to talk to. For example, sending requests to blob storage can be done via the `Azure::Storage::Blobs::BlobClient` API. All APIs on the client type send HTTP requests to the cloud service and return back an HTTP `Response<T>`.
 
 All the Azure C++ SDK headers needed to be included are located within the `<azure>` folder, with sub-folders corresponding to each service. Similarly, all types and APIs can be found within the `Azure::` namespace. For example, to use functionality form `Azure::Core`, include the following header at the beginning of your application `#include <azure/core.hpp>`.
 
@@ -99,6 +99,9 @@ int main()
     BlobClient client = BlobClient::CreateFromConnectionString(
         GetConnectionString(), containerName, blobName);
     BlockBlobClient block = client.AsBlockBlobClient();
+    
+    // Assuming there is some Azure::Core::Http::BodyStream containing the data to upload.
+    // For example either a MemoryBodyStream or FileBodyStream.
 
     Azure::Core::Response<Models::UploadBlockBlobResult> response = block.Upload(&stream);
 
@@ -171,7 +174,8 @@ while (!operation.IsDone())
 { 
   std::unique_ptr<Http::RawResponse> response = operation.Poll();
 
-  auto partialResult = operation.Value();
+  // Only certain long-running service operations give back results with partial progress.
+   auto partialResult = operation.Value();
   
   // Your per-polling custom logic goes here, such as logging progress.
 
@@ -181,7 +185,6 @@ while (!operation.IsDone())
 };
 
 auto finalResult = operation.Value();
-
 ```
 
 #### Visual Studio - CMakeSettings.json
