@@ -3,6 +3,7 @@
 
 #include <azure/core/platform.hpp>
 
+#include <fstream>
 #include <iostream>
 #include <stdio.h>
 
@@ -77,6 +78,75 @@ TEST(FileBodyStream, BadInput)
   EXPECT_THROW(Azure::IO::FileBodyStream(f, 0, -1), std::invalid_argument);
   EXPECT_THROW(Azure::IO::FileBodyStream(f, 0, FileSize + 1), std::invalid_argument);
   EXPECT_THROW(Azure::IO::FileBodyStream(f, 1, FileSize), std::invalid_argument);
+}
+
+TEST(FileBodyStream, UsingFilePointerWhileReading)
+{
+  // Let's say we have a file on disk with 3 bytes of data: "abc"
+  std::string fileName = "test.txt";
+  std::ofstream outfile(fileName);
+  outfile << "abc";
+  outfile.close();
+
+  char moredata[] = {'w', 'x', 'y', 'z'};
+  char overwrite[] = {'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v'};
+
+  FILE* fileAppendObject = fopen(fileName.c_str(), "a+b");
+  fwrite(moredata, sizeof(char), sizeof(moredata), fileAppendObject);
+  fflush(fileAppendObject); // It's the FILE* owner's responsibility to flush if needed.
+
+  // The ctor might also flush the stream.
+  auto fileBodyStream = Azure::IO::FileBodyStream(fileAppendObject, 0);
+  EXPECT_EQ(3 + sizeof(moredata), fileBodyStream.Length()); // The length is now 7, not 3.
+
+  auto output
+      = Azure::IO::BodyStream::ReadToEnd(Azure::Core::GetApplicationContext(), fileBodyStream);
+  // The returned content follows what's on disk: "abcwxyz"
+  {
+    std::vector<uint8_t> expected{'a', 'b', 'c', 'w', 'x', 'y', 'z'};
+    EXPECT_EQ(output, expected);
+  }
+
+  // Anything appended and buffered into fStream at this point will not get read by FileBodyStream
+  // because we already calculated the length.
+  fwrite(moredata, sizeof(char), sizeof(moredata), fileAppendObject);
+  fflush(fileAppendObject);
+
+  fileBodyStream.Rewind();
+  output = Azure::IO::BodyStream::ReadToEnd(Azure::Core::GetApplicationContext(), fileBodyStream);
+  // output is of size 7 only (since that was the length at ctor time), and the returned content
+  // follows what's on disk: "abcwxyz"
+  EXPECT_EQ(3 + sizeof(moredata), output.size());
+  {
+    std::vector<uint8_t> expected{'a', 'b', 'c', 'w', 'x', 'y', 'z'};
+    EXPECT_EQ(output, expected);
+  }
+
+  // Overwriting the actual content of the file on disk at this point will be reflected
+  // by FileBodyStream.Read, but only up to the initial file size (no resizing changes).
+  // For example, if we do this:
+  FILE* fileOverWriteObject = fopen(fileName.c_str(), "w");
+  fwrite(overwrite, sizeof(char), sizeof(overwrite), fileOverWriteObject);
+  fflush(fileOverWriteObject); // File on disk now has the contents "lmnopqrstuv"
+
+  fileBodyStream.Rewind();
+  output = Azure::IO::BodyStream::ReadToEnd(Azure::Core::GetApplicationContext(), fileBodyStream);
+  // output is of size 7 only (since that was the length at ctor time), but the returned content
+  // follows what's on disk: "lmnopqr"
+  EXPECT_EQ(3 + sizeof(moredata), output.size());
+  {
+    std::vector<uint8_t> expected{'l', 'm', 'n', 'o', 'p', 'q', 'r'};
+    EXPECT_EQ(output, expected);
+  }
+
+  // File clean up
+  fclose(fileOverWriteObject);
+  fclose(fileAppendObject);
+
+  if (remove(fileName.c_str()) != 0)
+  {
+    throw std::runtime_error("Error deleting file");
+  }
 }
 
 #if defined(AZ_PLATFORM_WINDOWS)
