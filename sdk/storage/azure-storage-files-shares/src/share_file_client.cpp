@@ -932,13 +932,15 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
         std::move(result), createResult.ExtractRawResponse());
   }
 
+
+
   Azure::Core::Response<Models::UploadShareFileFromResult> ShareFileClient::UploadFrom(
       const std::string& fileName,
       const UploadShareFileFromOptions& options,
       const Azure::Core::Context& context) const
   {
-    Storage::Details::FileReader fileReader(fileName);
-    Azure::IO::FileBodyStream stream(fileReader.GetHandle(), 0);
+    Azure::IO::FileBodyStream fileReader(fileName);
+    Storage::Details::PlatformFileBodyStream stream(Storage::Details::GetHandle(fileReader.GetFileStream()), 0, fileReader.Length());
 
     Details::ShareRestClient::File::CreateOptions protocolLayerOptions;
     protocolLayerOptions.XMsContentLength = stream.Length();
@@ -1015,8 +1017,8 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
     auto uploadPageFunc = [&](int64_t offset, int64_t length, int64_t chunkId, int64_t numChunks) {
       (void)chunkId;
       (void)numChunks;
-      Storage::Details::FileReader fileReader(fileName);
-      Azure::IO::FileBodyStream contentStream(fileReader.GetHandle(), offset, length);
+      Azure::IO::FileBodyStream fileReader(fileName);
+      Storage::Details::PlatformFileBodyStream contentStream(Storage::Details::GetHandle(fileReader.GetFileStream()), offset, length);
       UploadShareFileRangeOptions uploadRangeOptions;
       UploadRange(offset, &contentStream, uploadRangeOptions, context);
     };

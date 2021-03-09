@@ -172,8 +172,8 @@ namespace Azure { namespace Storage { namespace Blobs {
   {
     constexpr int64_t MaxStageBlockSize = 4000 * 1024 * 1024ULL;
 
-    Storage::Details::FileReader fileReader(fileName);
-    Azure::IO::FileBodyStream contentStream(fileReader.GetHandle(), 0);
+    Azure::IO::FileBodyStream fileReader(fileName);
+    Storage::Details::PlatformFileBodyStream contentStream(Storage::Details::GetHandle(fileReader.GetFileStream()), 0);
 
     if (contentStream.Length() <= options.TransferOptions.SingleUploadThreshold)
     {
@@ -193,8 +193,8 @@ namespace Azure { namespace Storage { namespace Blobs {
     };
 
     auto uploadBlockFunc = [&](int64_t offset, int64_t length, int64_t chunkId, int64_t numChunks) {
-      Storage::Details::FileReader fileReader(fileName);
-      Azure::IO::FileBodyStream contentStream(fileReader.GetHandle(), offset, length);
+      Azure::IO::FileBodyStream fileReader(fileName);
+      Storage::Details::PlatformFileBodyStream contentStream(Storage::Details::GetHandle(fileReader.GetFileStream()), offset, length);
       StageBlockOptions chunkOptions;
       auto blockInfo = StageBlock(getBlockId(chunkId), &contentStream, chunkOptions, context);
       if (chunkId == numChunks - 1)

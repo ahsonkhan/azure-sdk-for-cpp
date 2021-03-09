@@ -165,6 +165,53 @@ namespace Azure { namespace IO {
    */
   class FileBodyStream : public BodyStream {
   private:
+    FILE* m_fileStream;
+    int64_t m_length;
+    int64_t m_offset;
+#if defined(AZ_PLATFORM_WINDOWS)
+    int m_fileDescriptor;
+    HANDLE m_filehandle;
+#elif defined(AZ_PLATFORM_POSIX)
+    int m_fileDescriptor;
+#endif
+    // PlatFormBodyStream* _parallelBodyStream;
+
+    int64_t OnRead(Azure::Core::Context const& context, uint8_t* buffer, int64_t count) override;
+
+  public:
+    /**
+     * @brief Construct from a file object.
+     *
+     * @param file A pointer to an already opened file object that can be used to identify the file.
+     * @param offset The offset from the beginning of the file from which to start accessing the
+     * data.
+     * @param length The amounts of bytes, starting from the offset, that this stream can access.
+     *
+     * @remark The caller owns the file object and needs to open it along with keeping it alive for
+     * the necessary duration. The caller is also responsible for closing it once they are done.
+     *
+     * @remark It is the callers responsibility to flush any buffered data written before providing
+     * the file object.
+     *
+     * @remark Do not use the file object to read or write, while it is being used by the stream.
+     */
+    FileBodyStream(const std::string& filename);
+
+    ~FileBodyStream();
+
+    // Rewind seeks back to 0
+    void Rewind() override { this->m_offset = 0; }
+
+    int64_t Length() const override { return this->m_length; };
+
+    //FILE* GetFileStream() const { return m_fileStream; }
+  };
+
+  /**
+   * @brief #Azure::IO::BodyStream providing its data from a file.
+   */
+  class PlatformFileBodyStream : public BodyStream {
+  private:
     // immutable
     FILE* m_fileStream;
     int64_t m_baseOffset;

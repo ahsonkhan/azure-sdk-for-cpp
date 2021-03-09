@@ -83,92 +83,99 @@ int64_t MemoryBodyStream::OnRead(Context const& context, uint8_t* buffer, int64_
   return copy_length;
 }
 
-int64_t FileBodyStream::GetFileSize(FILE* file)
+FileBodyStream::FileBodyStream(const std::string& filename) : m_offset(0)
 {
-  // Get the current file position, to reset it back, after seeking to the end.
-  fpos_t currentPosition;
-  if (fgetpos(file, &currentPosition))
+  FILE* fileStream = fopen(filename.c_str(), "rb");
+  if (fileStream == nullptr)
   {
-    throw std::runtime_error("Failed to get the file object position.");
+    throw std::runtime_error("Failed to open file for reading.");
   }
 
-  if (fseek(file, 0, SEEK_END))
-  {
-    throw std::runtime_error("Failed to seek to the end of the file.");
-  }
-
-  auto fileSize = ftell(file);
-  if (fileSize == -1)
-  {
-    throw std::runtime_error("Failed to get the size of the file.");
-  }
-
-  // Reset the file position back to what it was originally set to.
-  if (fsetpos(file, &currentPosition))
-  {
-    throw std::runtime_error("Failed to set the file object position.");
-  }
-
-  return fileSize;
-}
-
-FileBodyStream::FileBodyStream(FILE* file, int64_t offset, int64_t length)
-    : m_fileStream(file), m_baseOffset(offset), m_length(length), m_offset(0)
-{
-  if (file == NULL)
-  {
-    throw std::invalid_argument(
-        "The file object cannot be null and must have been successfully opened.");
-  }
-
-  if (offset < 0 || length < 0)
-  {
-    throw std::invalid_argument("The file offset and size must be a non-negative number.");
-  }
-
-  int64_t fileSize = GetFileSize(m_fileStream);
-  if (offset > fileSize || length > fileSize || offset + length > fileSize)
-  {
-    throw std::invalid_argument("The offset and length cannot be larger than the file size.");
-  }
+  m_fileStream = fileStream;
 
 #if defined(AZ_PLATFORM_WINDOWS)
+  LARGE_INTEGER fileSize;
+  BOOL ret = GetFileSizeEx((HANDLE)_get_osfhandle(_fileno(m_fileStream)), &fileSize);
+  if (!ret)
+  {
+    fclose(m_handle);
+    throw std::runtime_error("Failed to get size of file.");
+  }
+  m_length = fileSize.QuadPart;
   m_fileDescriptor = _fileno(m_fileStream);
   m_filehandle = (HANDLE)_get_osfhandle(m_fileDescriptor);
 #elif defined(AZ_PLATFORM_POSIX)
+  struct stat finfo;
+
+  if (fstat(fileno(m_fileStream), &finfo))
+  {
+    fclose(m_handle);
+    throw std::runtime_error("Failed to get size of file.");
+  }
+  m_length = finfo.st_size;
   m_fileDescriptor = fileno(m_fileStream);
 #endif
 }
 
-FileBodyStream::FileBodyStream(FILE* file, int64_t offset)
-    : m_fileStream(file), m_baseOffset(offset), m_offset(0)
-{
-  if (file == NULL)
-  {
-    throw std::invalid_argument(
-        "The file object cannot be null and must have been successfully opened.");
-  }
+FileBodyStream::~FileBodyStream() { fclose(m_handle); }
 
-  if (offset < 0)
-  {
-    throw std::invalid_argument("The file offset and size must be a non-negative number.");
-  }
-
-  int64_t fileSize = GetFileSize(m_fileStream);
-  if (offset > fileSize)
-  {
-    throw std::invalid_argument("The offset cannot be larger than the file size.");
-  }
-
-  m_length = fileSize - offset;
-
-#if defined(AZ_PLATFORM_WINDOWS)
-  m_fileDescriptor = _fileno(m_fileStream);
-  m_filehandle = (HANDLE)_get_osfhandle(m_fileDescriptor);
-#elif defined(AZ_PLATFORM_POSIX)
-  m_fileDescriptor = fileno(m_fileStream);
-#endif
-}
+//FileBodyStream::FileBodyStream(FILE* file, int64_t offset, int64_t length)
+//    : m_fileStream(file), m_baseOffset(offset), m_length(length), m_offset(0)
+//{
+//  if (file == NULL)
+//  {
+//    throw std::invalid_argument(
+//        "The file object cannot be null and must have been successfully opened.");
+//  }
+//
+//  if (offset < 0 || length < 0)
+//  {
+//    throw std::invalid_argument("The file offset and size must be a non-negative number.");
+//  }
+//
+//  int64_t fileSize = GetFileSize(m_fileStream);
+//  if (offset > fileSize || length > fileSize || offset + length > fileSize)
+//  {
+//    throw std::invalid_argument("The offset and length cannot be larger than the file size.");
+//  }
+//
+//#if defined(AZ_PLATFORM_WINDOWS)
+//  m_fileDescriptor = _fileno(m_fileStream);
+//  m_filehandle = (HANDLE)_get_osfhandle(m_fileDescriptor);
+//#elif defined(AZ_PLATFORM_POSIX)
+//  m_fileDescriptor = fileno(m_fileStream);
+//#endif
+//}
+//
+//FileBodyStream::FileBodyStream(FILE* file, int64_t offset)
+//    : m_fileStream(file), m_baseOffset(offset), m_offset(0)
+//{
+//  if (file == NULL)
+//  {
+//    throw std::invalid_argument(
+//        "The file object cannot be null and must have been successfully opened.");
+//  }
+//
+//  if (offset < 0)
+//  {
+//    throw std::invalid_argument("The file offset and size must be a non-negative number.");
+//  }
+//
+//  int64_t fileSize = GetFileSize(m_fileStream);
+//  if (offset > fileSize)
+//  {
+//    throw std::invalid_argument("The offset cannot be larger than the file size.");
+//  }
+//
+//  m_length = fileSize - offset;
+//
+//#if defined(AZ_PLATFORM_WINDOWS)
+//  m_fileDescriptor = _fileno(m_fileStream);
+//  m_filehandle = (HANDLE)_get_osfhandle(m_fileDescriptor);
+//#elif defined(AZ_PLATFORM_POSIX)
+//  m_fileDescriptor = fileno(m_fileStream);
+//#endif
+//}
 
 int64_t FileBodyStream::OnRead(Azure::Core::Context const& context, uint8_t* buffer, int64_t count)
 {
@@ -180,7 +187,7 @@ int64_t FileBodyStream::OnRead(Azure::Core::Context const& context, uint8_t* buf
       this->m_fileDescriptor,
       buffer,
       std::min(count, this->m_length - this->m_offset),
-      this->m_baseOffset + this->m_offset);
+      this->m_offset);
 
   if (numberOfBytesRead < 0)
   {
@@ -192,8 +199,8 @@ int64_t FileBodyStream::OnRead(Azure::Core::Context const& context, uint8_t* buf
 
   DWORD numberOfBytesRead;
   auto o = OVERLAPPED();
-  o.Offset = static_cast<DWORD>(this->m_baseOffset + this->m_offset);
-  o.OffsetHigh = static_cast<DWORD>((this->m_baseOffset + this->m_offset) >> 32);
+  o.Offset = static_cast<DWORD>(this->m_offset);
+  o.OffsetHigh = static_cast<DWORD>((this->m_offset) >> 32);
 
   auto result = ReadFile(
       this->m_filehandle,
