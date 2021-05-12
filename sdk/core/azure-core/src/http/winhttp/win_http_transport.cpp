@@ -10,6 +10,7 @@
 #include <Windows.h>
 #include <algorithm>
 #include <string>
+#include <thread>
 #include <winhttp.h>
 
 using Azure::Core::Context;
@@ -201,6 +202,281 @@ void GetErrorAndThrow(const std::string& exceptionMessage)
       exceptionMessage + " Error Code: " + std::to_string(error) + ".");
 }
 
+static void WinhttpStatusCallback(
+    HINTERNET hInternet,
+    DWORD_PTR dwContext,
+    DWORD dwInternetStatus,
+    LPVOID lpvStatusInformation,
+    DWORD dwStatusInformationLength)
+{
+  (void)hInternet;
+  (void)dwContext;
+  (void)lpvStatusInformation;
+  (void)dwStatusInformationLength;
+
+  switch (dwInternetStatus)
+  {
+    case WINHTTP_CALLBACK_STATUS_CLOSING_CONNECTION: {
+      break;
+    }
+    case WINHTTP_CALLBACK_STATUS_CONNECTED_TO_SERVER: {
+      break;
+    }
+    case WINHTTP_CALLBACK_STATUS_CONNECTING_TO_SERVER: {
+      break;
+    }
+    case WINHTTP_CALLBACK_STATUS_CONNECTION_CLOSED: {
+      break;
+    }
+    case WINHTTP_CALLBACK_STATUS_DATA_AVAILABLE: {
+      // WinHttpQueryDataAvailable completed
+      break;
+    }
+    case WINHTTP_CALLBACK_STATUS_HANDLE_CREATED: {
+      // No-op
+      // lpvStatusInformation contains the handle
+      break;
+    }
+    case WINHTTP_CALLBACK_STATUS_HANDLE_CLOSING: {
+      break;
+    }
+    case WINHTTP_CALLBACK_STATUS_HEADERS_AVAILABLE: {
+      // WinHttpReceiveResponse completed
+      break;
+    }
+    case WINHTTP_CALLBACK_STATUS_INTERMEDIATE_RESPONSE: {
+      break;
+    }
+    case WINHTTP_CALLBACK_STATUS_NAME_RESOLVED: {
+      break;
+    }
+    case WINHTTP_CALLBACK_STATUS_READ_COMPLETE: {
+      // WinHttpReadData completed
+      break;
+    }
+    case WINHTTP_CALLBACK_STATUS_RECEIVING_RESPONSE: {
+      break;
+    }
+    case WINHTTP_CALLBACK_STATUS_REDIRECT: {
+      break;
+    }
+    case WINHTTP_CALLBACK_STATUS_REQUEST_ERROR: {
+      GetErrorAndThrow("Error in the request.");
+      break;
+    }
+    case WINHTTP_CALLBACK_STATUS_REQUEST_SENT: {
+      break;
+    }
+    case WINHTTP_CALLBACK_STATUS_RESOLVING_NAME: {
+      break;
+    }
+    case WINHTTP_CALLBACK_STATUS_RESPONSE_RECEIVED: {
+
+      /*BOOL* setRawResponse = reinterpret_cast<BOOL*>(dwContext);
+      *setRawResponse = TRUE;*/
+      wifi_connected = true;
+
+      // Azure::Core::Http::_detail::HandleManager* handleManager
+      //    = reinterpret_cast<Azure::Core::Http::_detail::HandleManager*>(dwContext);
+      //// HINTERNET requestHandle = reinterpret_cast<HINTERNET>(dwContext);
+      //// First, use WinHttpQueryHeaders to obtain the size of the buffer.
+      //// The call is expected to fail since no destination buffer is provided.
+      // DWORD sizeOfHeaders = 0;
+      // if (WinHttpQueryHeaders(
+      //        hInternet,
+      //        WINHTTP_QUERY_RAW_HEADERS,
+      //        WINHTTP_HEADER_NAME_BY_INDEX,
+      //        NULL,
+      //        &sizeOfHeaders,
+      //        WINHTTP_NO_HEADER_INDEX))
+      //{
+      //  // WinHttpQueryHeaders was expected to fail.
+      //  throw Azure::Core::Http::TransportException("Error while querying response headers.");
+      //}
+
+      //{
+      //  DWORD error = GetLastError();
+      //  if (error != ERROR_INSUFFICIENT_BUFFER)
+      //  {
+      //    throw Azure::Core::Http::TransportException(
+      //        "Error while querying response headers. Error Code: " + std::to_string(error) +
+      //        ".");
+      //  }
+      //}
+
+      //// Allocate memory for the buffer.
+      // std::vector<WCHAR> outputBuffer(sizeOfHeaders / sizeof(WCHAR), 0);
+
+      //// Now, use WinHttpQueryHeaders to retrieve all the headers.
+      //// Each header is terminated by "\0". An additional "\0" terminates the list of headers.
+      // if (!WinHttpQueryHeaders(
+      //        hInternet,
+      //        WINHTTP_QUERY_RAW_HEADERS,
+      //        WINHTTP_HEADER_NAME_BY_INDEX,
+      //        outputBuffer.data(),
+      //        &sizeOfHeaders,
+      //        WINHTTP_NO_HEADER_INDEX))
+      //{
+      //  GetErrorAndThrow("Error while querying response headers.");
+      //}
+
+      // auto start = outputBuffer.begin();
+      // auto last = start + sizeOfHeaders / sizeof(WCHAR);
+      // auto statusLineEnd = std::find(start, last, '\0');
+      // start = statusLineEnd + 1; // start of headers
+      // std::string responseHeaders = WideStringToString(std::wstring(start, last));
+
+      // DWORD sizeOfHttp = sizeOfHeaders;
+
+      //// Get the HTTP version.
+      // if (!WinHttpQueryHeaders(
+      //        hInternet,
+      //        WINHTTP_QUERY_VERSION,
+      //        WINHTTP_HEADER_NAME_BY_INDEX,
+      //        outputBuffer.data(),
+      //        &sizeOfHttp,
+      //        WINHTTP_NO_HEADER_INDEX))
+      //{
+      //  GetErrorAndThrow("Error while querying response headers.");
+      //}
+
+      // start = outputBuffer.begin();
+      //// Assuming ASCII here is OK since the input is expected to be an HTTP version string.
+      // std::string httpVersion = WideStringToStringASCII(start, start + sizeOfHttp /
+      // sizeof(WCHAR));
+
+      // uint16_t majorVersion = 0;
+      // uint16_t minorVersion = 0;
+      // ParseHttpVersion(httpVersion, &majorVersion, &minorVersion);
+
+      // DWORD statusCode = 0;
+      // DWORD dwSize = sizeof(statusCode);
+
+      //// Get the status code as a number.
+      // if (!WinHttpQueryHeaders(
+      //        hInternet,
+      //        WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER,
+      //        WINHTTP_HEADER_NAME_BY_INDEX,
+      //        &statusCode,
+      //        &dwSize,
+      //        WINHTTP_NO_HEADER_INDEX))
+      //{
+      //  GetErrorAndThrow("Error while querying response headers.");
+      //}
+
+      // HttpStatusCode httpStatusCode = static_cast<HttpStatusCode>(statusCode);
+
+      //// Get the optional reason phrase.
+      // std::string reasonPhrase;
+      // DWORD sizeOfReasonPhrase = sizeOfHeaders;
+
+      // if (WinHttpQueryHeaders(
+      //        hInternet,
+      //        WINHTTP_QUERY_STATUS_TEXT,
+      //        WINHTTP_HEADER_NAME_BY_INDEX,
+      //        outputBuffer.data(),
+      //        &sizeOfReasonPhrase,
+      //        WINHTTP_NO_HEADER_INDEX))
+      //{
+      //  start = outputBuffer.begin();
+      //  reasonPhrase
+      //      = WideStringToString(std::wstring(start, start + sizeOfReasonPhrase / sizeof(WCHAR)));
+      //}
+
+      // auto rawResponse = new RawResponse(majorVersion, minorVersion, httpStatusCode,
+      // reasonPhrase); handleManager->m_rawResponse = rawResponse;
+      //// Allocate the instance of the response on the heap with a shared ptr so this memory gets
+      //// delegated outside the transport and will be eventually released.
+
+      // SetHeaders(responseHeaders, handleManager->m_rawResponse);
+
+      ///*int64_t contentLength
+      //    = GetContentLength(handleManager, requestMethod, rawResponse->GetStatusCode());*/
+
+      // DWORD dwContentLength = 0;
+
+      //// For Head request, set the length of body response to 0.
+      //// Response will give us content-length as if we were not doing Head saying what would be
+      /// the / length of the body. However, server won't send any body. / For NoContent status
+      /// code, also need to set contentLength to 0.
+      // int64_t contentLength = 0;
+
+      //// Get the content length as a number.
+      // if (httpStatusCode != HttpStatusCode::NoContent)
+      //{
+      //  if (!WinHttpQueryHeaders(
+      //          hInternet,
+      //          WINHTTP_QUERY_CONTENT_LENGTH | WINHTTP_QUERY_FLAG_NUMBER,
+      //          WINHTTP_HEADER_NAME_BY_INDEX,
+      //          &dwContentLength,
+      //          &dwSize,
+      //          WINHTTP_NO_HEADER_INDEX))
+      //  {
+      //    contentLength = -1;
+      //  }
+      //  else
+      //  {
+      //    contentLength = static_cast<int64_t>(dwContentLength);
+      //  }
+      //}
+
+      // handleManager->m_requestHandle = hInternet;
+
+      // handleManager->m_rawResponse->SetBodyStream(
+      //    std::make_unique<_detail::WinHttpStream>(handleManager, contentLength));
+      // handleManager->m_setRawResponse = true;
+      break;
+    }
+    case WINHTTP_CALLBACK_STATUS_SECURE_FAILURE: {
+      break;
+    }
+    case WINHTTP_CALLBACK_STATUS_SENDING_REQUEST: {
+      break;
+    }
+    case WINHTTP_CALLBACK_STATUS_SENDREQUEST_COMPLETE: {
+      // WinHttpSendRequest completed
+
+      /*Azure::Core::Http::_detail::HandleManager* handleManager
+          = reinterpret_cast<Azure::Core::Http::_detail::HandleManager*>(dwContext);*/
+      // handleManager->m_context.ThrowIfCancelled();
+
+      // Wait to receive the response to the HTTP request initiated by WinHttpSendRequest.
+      // When WinHttpReceiveResponse completes successfully, the status code and response headers
+      // have been received.
+      if (!WinHttpReceiveResponse(hInternet, NULL))
+      {
+        // Errors include:
+        // ERROR_WINHTTP_CANNOT_CONNECT
+        // ERROR_WINHTTP_CHUNKED_ENCODING_HEADER_SIZE_OVERFLOW
+        // ERROR_WINHTTP_CLIENT_AUTH_CERT_NEEDED
+        // ...
+        // ERROR_WINHTTP_TIMEOUT
+        // ERROR_WINHTTP_UNRECOGNIZED_SCHEME
+        // ERROR_NOT_ENOUGH_MEMORY
+        GetErrorAndThrow("Error while receiving a response.");
+      }
+      break;
+    }
+    case WINHTTP_CALLBACK_STATUS_WRITE_COMPLETE: {
+      // WinHttpWriteData completed
+      break;
+    }
+    case WINHTTP_CALLBACK_STATUS_GETPROXYFORURL_COMPLETE: {
+      break;
+    }
+    case WINHTTP_CALLBACK_STATUS_CLOSE_COMPLETE: {
+      break;
+    }
+    case WINHTTP_CALLBACK_STATUS_SHUTDOWN_COMPLETE: {
+      break;
+    }
+    default: {
+      throw Azure::Core::Http::TransportException(
+          "Unsupported dwInternetStatus value: " + std::to_string(dwInternetStatus) + ".");
+    }
+  }
+}
+
 void WinHttpTransport::CreateSessionHandle()
 {
   if (!m_sessionHandle)
@@ -213,7 +489,7 @@ void WinHttpTransport::CreateSessionHandle()
         WINHTTP_ACCESS_TYPE_NO_PROXY,
         WINHTTP_NO_PROXY_NAME,
         WINHTTP_NO_PROXY_BYPASS,
-        0);
+        WINHTTP_FLAG_ASYNC);
 
     if (!m_sessionHandle)
     {
@@ -221,6 +497,34 @@ void WinHttpTransport::CreateSessionHandle()
       // ERROR_WINHTTP_INTERNAL_ERROR
       // ERROR_NOT_ENOUGH_MEMORY
       GetErrorAndThrow("Error while getting a session handle.");
+    }
+
+    WINHTTP_STATUS_CALLBACK isCallback = WinHttpSetStatusCallback(
+        m_sessionHandle,
+        (WINHTTP_STATUS_CALLBACK)WinhttpStatusCallback,
+        WINHTTP_CALLBACK_FLAG_ALL_NOTIFICATIONS,
+        NULL);
+
+    if (isCallback == WINHTTP_INVALID_STATUS_CALLBACK)
+    {
+      // Errors include:
+      // ERROR_WINHTTP_INCORRECT_HANDLE_TYPE
+      // ERROR_WINHTTP_INTERNAL_ERROR
+      // ERROR_NOT_ENOUGH_MEMORY
+      GetErrorAndThrow("Could not install the callback function.");
+    }
+
+    BOOL assured_non_blocking_callbacks = TRUE;
+    if (!WinHttpSetOption(
+            m_sessionHandle,
+            WINHTTP_OPTION_ASSURED_NON_BLOCKING_CALLBACKS,
+            &assured_non_blocking_callbacks,
+            sizeof(assured_non_blocking_callbacks)))
+    {
+      DWORD error = GetLastError();
+      std::wstring message = L"Unable to set Assured Non-Blocking Callbacks. Error Code: "
+          + std::to_wstring(error) + L".\n";
+      wprintf(message.c_str());
     }
   }
 }
@@ -343,6 +647,14 @@ void WinHttpTransport::SendRequest(std::unique_ptr<_detail::HandleManager>& hand
   int64_t streamLength = handleManager->m_request.GetBodyStream()->Length();
 
   handleManager->m_context.ThrowIfCancelled();
+
+  /*if (!WinHttpSetOption(
+          handleManager->m_requestHandle,
+          WINHTTP_OPTION_CONTEXT_VALUE,
+          &handleManager->m_setRawResponse,
+          sizeof(void*)))
+  {
+  }*/
 
   // Send a request.
   if (!WinHttpSendRequest(
@@ -569,6 +881,7 @@ std::unique_ptr<RawResponse> WinHttpTransport::SendRequestAndGetResponse(
 
 std::unique_ptr<RawResponse> WinHttpTransport::Send(Request& request, Context const& context)
 {
+  wifi_connected = false;
   auto handleManager = std::make_unique<_detail::HandleManager>(request, context);
 
   CreateSessionHandle();
@@ -577,8 +890,14 @@ std::unique_ptr<RawResponse> WinHttpTransport::Send(Request& request, Context co
 
   SendRequest(handleManager);
 
-  ReceiveResponse(handleManager);
+  // ReceiveResponse(handleManager);
+  while (!wifi_connected)
+  {
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
 
+  /*std::unique_ptr<RawResponse> response(handleManager.m_rawResponse);
+  return response;*/
   return SendRequestAndGetResponse(std::move(handleManager), request.GetMethod());
 }
 

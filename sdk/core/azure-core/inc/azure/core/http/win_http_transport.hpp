@@ -30,6 +30,8 @@
 
 namespace Azure { namespace Core { namespace Http {
 
+  static volatile bool wifi_connected = false;
+
   namespace _detail {
 
     constexpr static int64_t DefaultUploadChunkSize = 1024 * 64;
@@ -176,6 +178,8 @@ namespace Azure { namespace Core { namespace Http {
       // handles.
       if (m_sessionHandle)
       {
+        WinHttpSetStatusCallback(
+            m_sessionHandle, NULL, WINHTTP_CALLBACK_FLAG_ALL_NOTIFICATIONS, NULL);
         WinHttpCloseHandle(m_sessionHandle);
         m_sessionHandle = NULL;
       }
