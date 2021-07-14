@@ -9,9 +9,9 @@
 
 #pragma once
 
-#include "azure/keyvault/keys/cryptography/cryptography_provider.hpp"
 #include "azure/keyvault/keys/key_vault_key.hpp"
 
+#include "../private/cryptography_provider.hpp"
 #include "../private/rsa_cryptography_provider.hpp"
 
 #include <memory>
