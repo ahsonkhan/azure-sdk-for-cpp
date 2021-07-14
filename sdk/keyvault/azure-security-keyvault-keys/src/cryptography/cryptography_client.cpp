@@ -8,12 +8,14 @@
 #include <azure/core/http/http.hpp>
 #include <azure/core/http/policies/policy.hpp>
 
+#include <azure/keyvault/common/internal/keyvault_pipeline.hpp>
+
 #include "azure/keyvault/keys/cryptography/cryptography_client.hpp"
-#include "azure/keyvault/keys/cryptography/cryptography_provider.hpp"
-#include "azure/keyvault/keys/cryptography/remote_cryptography_client.hpp"
 #include "azure/keyvault/keys/key_operation.hpp"
 
+#include "../private/cryptography_provider.hpp"
 #include "../private/local_cryptography_provider_factory.hpp"
+#include "../private/remote_cryptography_client.hpp"
 
 #include <memory>
 #include <string>
@@ -53,6 +55,8 @@ inline std::vector<uint8_t> CreateDigest(
   return hashAlgorithm->Final(data.data(), data.size());
 }
 } // namespace
+
+CryptographyClient::~CryptographyClient() = default;
 
 void CryptographyClient::Initialize(std::string const&, Azure::Core::Context const& context)
 {

@@ -15,10 +15,11 @@
 #include <azure/keyvault/common/internal/keyvault_pipeline.hpp>
 
 #include "azure/keyvault/keys/cryptography/cryptography_client_options.hpp"
-#include "azure/keyvault/keys/cryptography/cryptography_provider.hpp"
 #include "azure/keyvault/keys/cryptography/encrypt_parameters.hpp"
 #include "azure/keyvault/keys/cryptography/encrypt_result.hpp"
 #include "azure/keyvault/keys/key_vault_key.hpp"
+
+#include "cryptography_provider.hpp"
 
 #include <memory>
 #include <string>
