@@ -44,12 +44,14 @@ set(
     inc/azure/template/dll_import_export.hpp
     inc/azure/template/template_client.hpp
     inc/azure/template.hpp
+    inc/azure/data/appconfiguration/rest_client.hpp
 )
 
 set(
   AZURE_TEMPLATE_SOURCE
     src/private/package_version.hpp
     src/template_client.cpp
+    src/rest_client.cpp
 )
 
 add_library(azure-template ${AZURE_TEMPLATE_HEADER} ${AZURE_TEMPLATE_SOURCE})
