@@ -12,6 +12,13 @@
 #include <utility>
 
 #include <gtest/gtest.h>
+#include <azure/core/context.hpp>
+#include <azure/core/credentials/credentials.hpp>
+#include <azure/core/credentials/token_credential_options.hpp>
+#include <azure/core/datetime.hpp>
+#include <chrono>
+#include <type_traits>
+#include <vector>
 
 using Azure::Identity::AzureCliCredential;
 

@@ -13,11 +13,9 @@
 #include <azure/core/internal/unique_handle.hpp>
 #include <azure/core/platform.hpp>
 
-#include <cstdio>
 #include <stdexcept>
 #include <thread>
 #include <type_traits>
-#include <utility>
 #include <vector>
 
 #if defined(AZ_PLATFORM_WINDOWS)
@@ -29,14 +27,27 @@
 #endif
 #include <windows.h>
 #else
-#include <errno.h>
-#include <fcntl.h>
-#include <signal.h>
 #include <spawn.h>
 #include <unistd.h>
 
 #include <sys/wait.h>
 #endif
+#include <azure/core/context.hpp>
+#include <azure/core/credentials/credentials.hpp>
+#include <azure/core/credentials/token_credential_options.hpp>
+#include <azure/core/datetime.hpp>
+#include <azure/core/diagnostics/logger.hpp>
+#include "azure/identity/detail/token_cache.hpp"
+#include <winapifamily.h>
+#include <errhandlingapi.h>
+#include <fileapi.h>
+#include <handleapi.h>
+#include <minwinbase.h>
+#include <namedpipeapi.h>
+#include <processthreadsapi.h>
+#include <chrono>
+#include <exception>
+#include <string>
 
 using Azure::Identity::AzureCliCredential;
 

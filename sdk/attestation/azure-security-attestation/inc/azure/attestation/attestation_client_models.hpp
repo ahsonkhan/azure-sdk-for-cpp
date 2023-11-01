@@ -415,7 +415,7 @@ namespace Azure { namespace Security { namespace Attestation { namespace Models 
      */
     Azure::Nullable<std::vector<uint8_t>> PolicyHash;
 
-    /** @brief  If present, reflects that the enclave being attestated can be debugged.
+    /** @brief  If present, reflects that the enclave being attested can be debugged.
      * @note: If VerifierType is "sgx", then this field *must* be present */
 
     Azure::Nullable<bool> SgxIsDebuggable;

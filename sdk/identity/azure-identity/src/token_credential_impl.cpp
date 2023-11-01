@@ -13,6 +13,22 @@
 #include <chrono>
 #include <limits>
 #include <map>
+#include <azure/core/context.hpp>
+#include <azure/core/credentials/credentials.hpp>
+#include <azure/core/credentials/token_credential_options.hpp>
+#include <azure/core/datetime.hpp>
+#include <azure/core/diagnostics/logger.hpp>
+#include <azure/core/http/http_status_code.hpp>
+#include <azure/core/http/raw_response.hpp>
+#include <cstdint>
+#include <exception>
+#include <functional>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 using Azure::Identity::_detail::TokenCredentialImpl;
 

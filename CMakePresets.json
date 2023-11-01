@@ -356,7 +356,8 @@
         "enable-perf",
         "winhttp-transport",
         "curl-transport"
-      ]
+      ],
+      "cacheVariables": { "CMAKE_CXX_INCLUDE_WHAT_YOU_USE": "include-what-you-use" }
     },
     {
       "name": "x86-msvc-static-debug-perftests",
