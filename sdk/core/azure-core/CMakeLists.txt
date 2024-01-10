@@ -154,6 +154,8 @@ set(
 
 add_library(azure-core ${AZURE_CORE_HEADER} ${AZURE_CORE_SOURCE})
 
+target_precompile_headers(azure-core PRIVATE "pch.hpp")
+
 target_include_directories(
   azure-core
     PUBLIC

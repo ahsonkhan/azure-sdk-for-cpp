@@ -12,11 +12,10 @@
 #include "azure/core/datetime.hpp"
 
 #include <exception>
-#include <memory>
-#include <mutex>
 #include <string>
-#include <utility>
 #include <vector>
+#include <chrono>
+#include <type_traits>
 
 namespace Azure { namespace Core { namespace Credentials {
 
