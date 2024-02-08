@@ -103,11 +103,27 @@ AccessToken TokenCredentialImpl::GetToken(
       auto request = createRequest();
       for (;;)
       {
+        auto const requestBodyVec = request->HttpRequest.GetBodyStream()->ReadToEnd();
+        auto const requestBody = std::string(
+            reinterpret_cast<char const*>(requestBodyVec.data()), requestBodyVec.size());
+
+        IdentityLog::Write(
+            IdentityLog::Level::Verbose,
+            "TokenCredentialImpl::GetToken(): Request body: " + requestBody);
+
         response = m_httpPipeline.Send(request->HttpRequest, context);
         if (!response)
         {
           throw std::runtime_error("null response");
         }
+
+        auto const responseBodyVec = response->GetBody();
+        auto const responseBodyTest = std::string(
+            reinterpret_cast<char const*>(responseBodyVec.data()), responseBodyVec.size());
+
+        IdentityLog::Write(
+            IdentityLog::Level::Verbose,
+            "TokenCredentialImpl::GetToken(): Response body: " + responseBodyTest);
 
         auto const statusCode = response->GetStatusCode();
         if (statusCode == HttpStatusCode::Ok)
