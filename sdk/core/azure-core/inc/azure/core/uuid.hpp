@@ -26,9 +26,11 @@ namespace Azure { namespace Core {
     static constexpr size_t UuidSize = 16;
 
     std::array<uint8_t, UuidSize> m_uuid{};
+    std::string m_uuidString = {};
 
   private:
     Uuid(uint8_t const uuid[UuidSize]) { std::memcpy(m_uuid.data(), uuid, UuidSize); }
+    Uuid(std::string const& uuid) { m_uuidString = uuid; }
 
   public:
     /**
@@ -42,7 +44,7 @@ namespace Azure { namespace Core {
      * representation of the Uuid.
      * @returns An array with the binary representation of the Uuid.
      */
-    std::array<uint8_t, UuidSize> const& AsArray() const { return m_uuid; }
+    std::array<uint8_t, UuidSize> const& AsArray();
 
     /**
      * @brief Creates a new random UUID.

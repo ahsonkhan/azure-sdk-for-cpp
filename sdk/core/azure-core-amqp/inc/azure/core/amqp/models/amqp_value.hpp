@@ -304,7 +304,7 @@ namespace Azure { namespace Core { namespace Amqp { namespace Models {
      * @param value UTF-32 encoded unicode value to be set.
      *
      */
-    AmqpValue(Azure::Core::Uuid const& value);
+    AmqpValue(Azure::Core::Uuid& value);
 
     /** @brief Equality comparison operator.
      * @param that - Value to compare to this value.

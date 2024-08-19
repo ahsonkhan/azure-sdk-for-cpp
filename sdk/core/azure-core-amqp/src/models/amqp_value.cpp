@@ -297,10 +297,9 @@ namespace Azure { namespace Core { namespace Amqp { namespace Models {
           _detail::UniqueAmqpValueHandle{amqpvalue_create_char(value)})}
   {
   }
-  AmqpValue::AmqpValue(Azure::Core::Uuid const& uuid)
+  AmqpValue::AmqpValue(Azure::Core::Uuid& uuid)
       : m_impl{std::make_unique<_detail::AmqpValueImpl>(
-          _detail::UniqueAmqpValueHandle{amqpvalue_create_uuid(const_cast<unsigned char*>(
-              static_cast<const unsigned char*>(uuid.AsArray().data())))})}
+          _detail::UniqueAmqpValueHandle{amqpvalue_create_uuid(const_cast<unsigned char*>(const_cast<unsigned char*>(uuid.AsArray().data())))})}
   {
   }
 

@@ -16,35 +16,46 @@ static thread_local std::mt19937_64 randomGenerator(std::random_device{}());
 } // namespace
 #endif
 
+namespace {
+static char ByteToHexChar(uint8_t byte)
+{
+  if (byte <= 9)
+    return '0' + byte;
+  if (byte >= 10 && byte <= 15)
+    return 'a' + (byte - 10);
+  throw std::out_of_range("Byte value out of range for hexadecimal character.");
+}
+
+static uint8_t HexCharToByte(char c)
+{
+  if (c >= '0' && c <= '9')
+    return c - '0';
+  if (c >= 'a' && c <= 'f')
+    return c - 'a' + 10;
+  if (c >= 'A' && c <= 'F')
+    return c - 'A' + 10;
+  throw std::invalid_argument("Invalid hexadecimal character.");
+}
+} // namespace
+
 namespace Azure { namespace Core {
   std::string Uuid::ToString() const
   {
-    // Guid is 36 characters
-    //  Add one byte for the \0
-    char s[37];
+    std::string s(36, '-');
 
-    std::snprintf(
-        s,
-        sizeof(s),
-        "%2.2x%2.2x%2.2x%2.2x-%2.2x%2.2x-%2.2x%2.2x-%2.2x%2.2x-%2.2x%2.2x%2.2x%2.2x%2.2x%2.2x",
-        m_uuid[0],
-        m_uuid[1],
-        m_uuid[2],
-        m_uuid[3],
-        m_uuid[4],
-        m_uuid[5],
-        m_uuid[6],
-        m_uuid[7],
-        m_uuid[8],
-        m_uuid[9],
-        m_uuid[10],
-        m_uuid[11],
-        m_uuid[12],
-        m_uuid[13],
-        m_uuid[14],
-        m_uuid[15]);
+    for (size_t i = 0, j = 0; j < s.size() && i < UuidSize; i++)
+    {
+      if (i == 4 || i == 6 || i == 8 || i == 10)
+      {
+        j++; // Add hyphens at the appropriate places
+      }
 
-    return std::string(s);
+      uint8_t highNibble = (m_uuid[i] >> 4) & 0x0F;
+      uint8_t lowNibble = m_uuid[i] & 0x0F;
+      s[j++] = ByteToHexChar(highNibble);
+      s[j++] = ByteToHexChar(lowNibble);
+    }
+    return s;
   }
 
   Uuid Uuid::CreateUuid()
@@ -81,13 +92,62 @@ namespace Azure { namespace Core {
 
     uuid[6] = (uuid[6] & 0xF) | (version << 4);
 
+    //std::string s(36, '-');
+
+    //for (size_t i = 0, j = 0; j < s.size() && i < UuidSize; i++)
+    //{
+    //  if (i == 4 || i == 6 || i == 8 || i == 10)
+    //  {
+    //    j++; // Add hyphens at the appropriate places
+    //  }
+
+    //  uint8_t highNibble = (uuid[i] >> 4) & 0x0F;
+    //  uint8_t lowNibble = uuid[i] & 0x0F;
+    //  s[j++] = ByteToHexChar(highNibble);
+    //  s[j++] = ByteToHexChar(lowNibble);
+    //}
+
+    //return Uuid(s);
     return Uuid(uuid);
   }
 
   Uuid Uuid::CreateFromArray(std::array<uint8_t, UuidSize> const& uuid)
   {
+    std::string s(36, '-');
+
+    for (size_t i = 0, j = 0; j < s.size() && i < UuidSize; i++)
+    {
+      if (i == 4 || i == 6 || i == 8 || i == 10)
+      {
+        j++; // Add hyphens at the appropriate places
+      }
+
+      uint8_t highNibble = (uuid[i] >> 4) & 0x0F;
+      uint8_t lowNibble = uuid[i] & 0x0F;
+      s[j++] = ByteToHexChar(highNibble);
+      s[j++] = ByteToHexChar(lowNibble);
+    }
+
     Uuid rv{uuid.data()};
     return rv;
+  }
+
+  std::array<uint8_t, Azure::Core::Uuid::UuidSize> const& Uuid::AsArray()
+  {
+    for (size_t i = 0, j = 0; j < UuidSize && i < m_uuidString.size();)
+    {
+      if (m_uuidString[i] == '-')
+      {
+        i++;
+        continue; // Skip hyphens
+      }
+
+      m_uuid[j] = (HexCharToByte(m_uuidString[i++]) << 4);
+      m_uuid[j] |= HexCharToByte(m_uuidString[i++]);
+      j++;
+    }
+
+    return m_uuid;
   }
 
 }} // namespace Azure::Core
