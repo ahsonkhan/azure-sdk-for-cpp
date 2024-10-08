@@ -60,6 +60,27 @@ namespace Azure { namespace Core { namespace Credentials {
      *
      */
     std::string TenantId;
+
+    /*
+     * @brief Additional claims to be included in the token to satisfy a conditional access policy,
+     * such as a service may return in a claims challenge following an authorization failure. See
+     * https://openid.net/specs/openid-connect-core-1_0-final.html#ClaimsParameter for more
+     * information on format and content.
+     */
+    Nullable<std::string> Claims;
+
+    /*
+     * @brief Indicates whether to enable Continuous Access Evaluation (CAE) for the requested
+     * token.
+     *
+     * @remark If a resource API implements CAE and your application declares it can handle CAE,
+     * your app receives CAE tokens for that resource. For this reason, if you declare your app CAE
+     * ready, your application must handle the CAE claim challenge for all resource APIs that accept
+     * Microsoft Identity access tokens. If you don't handle CAE responses in these API calls, your
+     * app could end up in a loop retrying an API call with a token that is still in the returned
+     * lifespan of the token but has been revoked due to CAE.
+     */
+    bool IsCaeEnabled;
   };
 
   /**
